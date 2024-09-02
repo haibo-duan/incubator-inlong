@@ -26,7 +26,7 @@
         <result column="inlong_stream_id" jdbcType="VARCHAR" property="inlongStreamId"/>
         <result column="source_type" jdbcType="VARCHAR" property="sourceType"/>
         <result column="source_name" jdbcType="VARCHAR" property="sourceName"/>
-        <result column="template_id" jdbcType="INTEGER" property="templateId"/>
+        <result column="task_map_id" jdbcType="INTEGER" property="taskMapId"/>
         <result column="agent_ip" jdbcType="VARCHAR" property="agentIp"/>
         <result column="uuid" jdbcType="VARCHAR" property="uuid"/>
         <result column="data_node_name" jdbcType="VARCHAR" property="dataNodeName"/>
@@ -35,6 +35,7 @@
         <result column="serialization_type" jdbcType="VARCHAR" property="serializationType"/>
         <result column="snapshot" jdbcType="LONGVARCHAR" property="snapshot"/>
         <result column="report_time" jdbcType="TIMESTAMP" property="reportTime"/>
+        <result column="data_time_zone" jdbcType="VARCHAR" property="dataTimeZone"/>
         <result column="ext_params" jdbcType="LONGVARCHAR" property="extParams"/>
         <result column="version" jdbcType="INTEGER" property="version"/>
         <result column="status" jdbcType="INTEGER" property="status"/>
@@ -46,25 +47,25 @@
         <result column="modify_time" jdbcType="TIMESTAMP" property="modifyTime"/>
     </resultMap>
     <sql id="Base_Column_List">
-        id, inlong_group_id, inlong_stream_id, source_type, source_name, template_id, agent_ip, uuid,
+        id, inlong_group_id, inlong_stream_id, source_type, source_name, task_map_id, agent_ip, uuid,
         data_node_name, inlong_cluster_name, inlong_cluster_node_group, serialization_type, snapshot, report_time,
-        ext_params, version, status, previous_status, is_deleted, creator, modifier, create_time, modify_time
+        data_time_zone, ext_params, version, status, previous_status, is_deleted, creator, modifier, create_time, modify_time
     </sql>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id"
             parameterType="org.apache.inlong.manager.dao.entity.StreamSourceEntity">
         insert into stream_source (inlong_group_id, inlong_stream_id,
-                                   source_type, source_name, template_id, agent_ip,
+                                   source_type, source_name, task_map_id, agent_ip,
                                    uuid, data_node_name, inlong_cluster_name, inlong_cluster_node_group,
-                                   serialization_type, snapshot,
-                                   report_time, ext_params, status,
+                                   serialization_type, snapshot, report_time,
+                                   data_time_zone, ext_params, status,
                                    previous_status, creator, modifier)
         values (#{inlongGroupId,jdbcType=VARCHAR}, #{inlongStreamId,jdbcType=VARCHAR},
-                #{sourceType,jdbcType=VARCHAR}, #{sourceName,jdbcType=VARCHAR}, #{templateId,jdbcType=INTEGER},
+                #{sourceType,jdbcType=VARCHAR}, #{sourceName,jdbcType=VARCHAR}, #{taskMapId,jdbcType=INTEGER},
                 #{agentIp,jdbcType=VARCHAR}, #{uuid,jdbcType=VARCHAR}, #{dataNodeName,jdbcType=VARCHAR},
                 #{inlongClusterName,jdbcType=VARCHAR}, #{inlongClusterNodeGroup,jdbcType=VARCHAR},
-                #{serializationType,jdbcType=VARCHAR}, #{snapshot,jdbcType=LONGVARCHAR},
-                #{modifyTime,jdbcType=TIMESTAMP}, #{extParams,jdbcType=LONGVARCHAR}, #{status,jdbcType=INTEGER},
+                #{serializationType,jdbcType=VARCHAR}, #{snapshot,jdbcType=LONGVARCHAR},#{modifyTime,jdbcType=TIMESTAMP},
+                #{dataTimeZone,jdbcType=VARCHAR}, #{extParams,jdbcType=LONGVARCHAR}, #{status,jdbcType=INTEGER},
                 #{previousStatus,jdbcType=INTEGER}, #{creator,jdbcType=VARCHAR}, #{modifier,jdbcType=VARCHAR})
     </insert>
 
@@ -75,11 +76,11 @@
         where id = #{id,jdbcType=INTEGER}
         and is_deleted = 0
     </select>
-    <select id="selectByTemplateId" resultType="org.apache.inlong.manager.dao.entity.StreamSourceEntity">
+    <select id="selectByTaskMapId" resultType="org.apache.inlong.manager.dao.entity.StreamSourceEntity">
         select
         <include refid="Base_Column_List"/>
         from stream_source
-        where template_id = #{templateId,jdbcType=INTEGER}
+        where task_map_id = #{taskMapId,jdbcType=INTEGER}
         and is_deleted = 0
     </select>
     <select id="selectByIdForUpdate" resultType="org.apache.inlong.manager.dao.entity.StreamSourceEntity">
@@ -97,11 +98,11 @@
         where id = #{id,jdbcType=INTEGER}
         for update
     </select>
-    <select id="selectOneByTemplatedIdAndAgentIp" resultType="org.apache.inlong.manager.dao.entity.StreamSourceEntity">
+    <select id="selectOneByTaskMapIdAndAgentIp" resultType="org.apache.inlong.manager.dao.entity.StreamSourceEntity">
         select
         <include refid="Base_Column_List"/>
         from stream_source
-        where template_id = #{templateId,jdbcType=INTEGER}
+        where task_map_id = #{taskMapId,jdbcType=INTEGER}
         and agent_ip = #{agentIp, jdbcType=VARCHAR}
         and is_deleted = 0
         limit 1
@@ -117,6 +118,19 @@
             <if test="streamId != null and streamId != ''">
                 and inlong_stream_id = #{streamId, jdbcType=VARCHAR}
             </if>
+        </where>
+    </select>
+    <select id="selectDataAddTaskCount" resultType="java.lang.Integer">
+        select count(1)
+        from stream_source
+        <where>
+            <if test="groupId != null and groupId != ''">
+                and inlong_group_id = #{groupId, jdbcType=VARCHAR}
+            </if>
+            <if test="streamId != null and streamId != ''">
+                and inlong_stream_id = #{streamId, jdbcType=VARCHAR}
+            </if>
+            and task_map_id is not NULL
         </where>
     </select>
     <select id="selectByCondition"
@@ -158,7 +172,7 @@
                     #{status}
                 </foreach>
             </if>
-            and template_id is NULL
+            and task_map_id is NULL
         </where>
         <choose>
             <when test="request.orderField != null and request.orderField != '' and request.orderType != null and request.orderType != ''">
@@ -270,7 +284,7 @@
                 </foreach>
             </if>
             and agent_ip is NULL
-            and template_id is NULL
+            and task_map_id is NULL
             and inlong_cluster_name = #{clusterName, jdbcType=VARCHAR}
         </where>
     </select>
@@ -279,8 +293,8 @@
         <include refid="Base_Column_List"/>
         from stream_source
         <where>
-            (inlong_cluster_name = #{clusterName, jdbcType=VARCHAR} or inlong_cluster_name is NULL)
-            and agent_ip = #{agentIp, jdbcType=VARCHAR}
+            (inlong_cluster_name = #{clusterName, jdbcType=VARCHAR})
+            and (find_in_set( #{agentIp, jdbcType=VARCHAR}, agent_ip) or agent_ip ='All')
             and `status` in
             <foreach item="item" index="index" collection="statusList" open="(" close=")" separator=",">
                 #{item}
@@ -302,7 +316,7 @@
                     #{item}
                 </foreach>
             </if>
-            and template_id is NULL
+            and task_map_id is NULL
         </where>
     </select>
     <select id="selectSourceType" resultType="java.lang.String">
@@ -320,25 +334,19 @@
         </where>
     </select>
     <select id="selectNeedUpdateIdsByClusterAndDataNode" resultType="java.lang.Integer">
-        select source.id
-        from stream_source source, inlong_stream stream, inlong_group inlong_group
+        select id
+        from stream_source
         <where>
-            source.is_deleted = 0
-            and inlong_group.inlong_group_id = source.inlong_group_id
-            and inlong_group.is_deleted = 0
-            and inlong_group.status in (120, 130)
-            and stream.inlong_group_id = source.inlong_group_id
-            and stream.is_deleted = 0
-            and stream.status in (120, 130)
-            and source.status not in (99, 110)
+            status not in (99, 110)
+            and is_deleted = 0
             <if test="clusterName != null">
-                and source.inlong_cluster_name = #{clusterName, jdbcType=VARCHAR}
+                and inlong_cluster_name = #{clusterName, jdbcType=VARCHAR}
             </if>
             <if test="nodeName != null">
-                and source.data_node_name = #{nodeName, jdbcType=VARCHAR}
+                and data_node_name = #{nodeName, jdbcType=VARCHAR}
             </if>
             <if test="sourceType != null">
-                and source.source_type = #{sourceType, jdbcType=VARCHAR}
+                and source_type = #{sourceType, jdbcType=VARCHAR}
             </if>
         </where>
     </select>
@@ -400,6 +408,9 @@
             <if test="reportTime != null">
                 report_time = #{reportTime,jdbcType=TIMESTAMP},
             </if>
+            <if test="dataTimeZone != null">
+                data_time_zone = #{dataTimeZone,jdbcType=VARCHAR},
+            </if>
             <if test="extParams != null">
                 ext_params = #{extParams,jdbcType=LONGVARCHAR},
             </if>
@@ -437,6 +448,7 @@
             serialization_type  = #{serializationType,jdbcType=VARCHAR},
             snapshot            = #{snapshot,jdbcType=LONGVARCHAR},
             report_time         = #{reportTime,jdbcType=TIMESTAMP},
+            data_time_zone      = #{dataTimeZone,jdbcType=VARCHAR},
             ext_params          = #{extParams,jdbcType=LONGVARCHAR},
             version             = #{version,jdbcType=INTEGER} + 1,
             status              = #{status,jdbcType=INTEGER},
@@ -550,7 +562,18 @@
             and status not in (99, 201, 301)
         </where>
     </update>
-
+    <update id="logicalDeleteByTimeout">
+        update stream_source
+        <set>
+            is_deleted = id,
+            status = 99
+        </set>
+        <where>
+            is_deleted = 0
+            and task_map_id is not null
+            and modify_time &lt;= DATE_ADD(NOW(), INTERVAL -#{retentionDays, jdbcType=INTEGER} DAY)
+        </where>
+    </update>
     <update id="logicalDeleteByRelatedId">
         update stream_source
         <set>
@@ -587,7 +610,7 @@
         </set>
         where is_deleted = 0
         and agent_ip = #{agentIp, jdbcType=VARCHAR}
-        and template_id is not null
+        and task_map_id is not null
         <if test="targetStatus != null">
             and status = #{targetStatus, jdbcType=INTEGER}
         </if>

@@ -37,8 +37,8 @@ import org.apache.inlong.manager.service.cluster.InlongClusterService;
 import org.apache.inlong.manager.service.stream.InlongStreamService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.common.util.set.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,6 +110,7 @@ public abstract class AbstractGroupOperator implements InlongGroupOperator {
     @Transactional(rollbackFor = Throwable.class, isolation = Isolation.REPEATABLE_READ)
     public void updateOpt(InlongGroupRequest request, String operator) {
         InlongGroupEntity entity = groupMapper.selectByGroupId(request.getInlongGroupId());
+        CommonBeanUtils.copyProperties(request, entity, true);
         // set the ext params
         setTargetEntity(request, entity);
         entity.setModifier(operator);
@@ -131,6 +132,7 @@ public abstract class AbstractGroupOperator implements InlongGroupOperator {
     @Override
     public Map<String, Object> getClusterInfoByTag(String clusterTag) {
         Map<String, Object> clusterMap = new HashMap<>();
+        clusterMap.put("inlongClusterTag", clusterTag);
         Set<String> mqClusters = Sets.newHashSet(ClusterType.PULSAR, ClusterType.TUBEMQ, ClusterType.KAFKA);
         List<InlongClusterEntity> clusterEntities = clusterEntityMapper.selectByClusterTag(clusterTag);
         for (InlongClusterEntity clusterEntity : clusterEntities) {

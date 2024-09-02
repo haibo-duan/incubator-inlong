@@ -48,9 +48,17 @@
     <select id="selectInlongStreamId" resultType="org.apache.inlong.manager.pojo.dataproxy.InlongStreamId">
         select inlong_group_id,
                inlong_stream_id,
+               data_type,
+               wrap_type,
                mq_resource as topic,
                ext_params
         from inlong_stream
+        where is_deleted = 0
+    </select>
+    <select id="selectInlongClusterTag" resultType="org.apache.inlong.manager.dao.entity.InlongClusterTagEntity">
+        select cluster_tag,
+               ext_params
+        from inlong_cluster_tag
         where is_deleted = 0
     </select>
 </mapper>

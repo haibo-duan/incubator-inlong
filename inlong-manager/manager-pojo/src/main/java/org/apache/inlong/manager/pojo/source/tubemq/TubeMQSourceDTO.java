@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotNull;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.TreeSet;
 
@@ -49,20 +50,32 @@ public class TubeMQSourceDTO {
     @ApiModelProperty("Topic of the TubeMQ")
     private String topic;
 
-    @ApiModelProperty("Format of the TubeMQ")
-    private String format;
-
     @ApiModelProperty("Group of the TubeMQ")
-    private String groupId;
+    private String consumeGroup;
 
     @ApiModelProperty("Session key of the TubeMQ")
     private String sessionKey;
 
+    @ApiModelProperty(value = "Data encoding format: UTF-8, GBK")
+    private String dataEncoding = StandardCharsets.UTF_8.toString();
+
+    @ApiModelProperty(value = "Data separator")
+    private String dataSeparator = String.valueOf((int) '|');
+
+    @ApiModelProperty(value = "KV separator")
+    private String kvSeparator;
+
+    @ApiModelProperty(value = "Data field escape symbol")
+    private String dataEscapeChar;
+
+    @ApiModelProperty(value = "The message body wrap  wrap type, including: RAW, INLONG_MSG_V0, INLONG_MSG_V1, etc")
+    private String wrapType;
+
     /**
-     * The tubemq consumers use this tid set to filter records reading from server.
+     * The tubemq consumers use this streamId set to filter records reading from server.
      */
-    @ApiModelProperty("Tid of the TubeMQ")
-    private TreeSet<String> tid;
+    @ApiModelProperty("streamId of the TubeMQ")
+    private TreeSet<String> streamId;
 
     @ApiModelProperty("Properties for TubeMQ")
     private Map<String, Object> properties;
@@ -74,7 +87,6 @@ public class TubeMQSourceDTO {
         TubeMQSourceDTO dto = StringUtils.isNotBlank(extParams)
                 ? TubeMQSourceDTO.getFromJson(extParams)
                 : new TubeMQSourceDTO();
-        dto.setFormat(request.getSerializationType());
         return CommonBeanUtils.copyProperties(request, dto, true);
     }
 

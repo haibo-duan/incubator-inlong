@@ -22,6 +22,7 @@ import { Button } from 'antd';
 import dayjs from 'dayjs';
 import i18n from '@/i18n';
 import { sinks } from '@/plugins/sinks';
+import request from '@/core/utils/request';
 
 export const timeStaticsDimList = [
   {
@@ -71,7 +72,7 @@ export const toChartData = (source, sourceDataMap) => {
   const xAxisData = Object.keys(sourceDataMap);
   return {
     legend: {
-      data: source.map(item => getAuditLabel(item.auditId, item.nodeType)),
+      data: source.map(item => item.auditName),
     },
     tooltip: {
       trigger: 'axis',
@@ -84,7 +85,7 @@ export const toChartData = (source, sourceDataMap) => {
       type: 'value',
     },
     series: source.map(item => ({
-      name: getAuditLabel(item.auditId, item.nodeType),
+      name: item.auditName,
       type: 'line',
       data: xAxisData.map(logTs => sourceDataMap[logTs]?.[item.auditId] || 0),
     })),
@@ -92,32 +93,91 @@ export const toChartData = (source, sourceDataMap) => {
 };
 
 export const toTableData = (source, sourceDataMap) => {
-  return Object.keys(sourceDataMap)
+  const map = Object.keys(sourceDataMap)
     .reverse()
     .map(logTs => ({
       ...sourceDataMap[logTs],
       logTs,
     }));
+  let sourceData = getSourceDataWithPercent(source, map);
+  return getSourceDataWithCommas(sourceData);
 };
+
+export const getSourceDataWithPercent = (sourceKeys, sourceMap) => {
+  const auditIds = Array.from(
+    new Set(Object.values(sourceKeys).map(({ auditId }) => parseInt(auditId))),
+  );
+  return sourceMap.map(source => {
+    for (const auditId of auditIds) {
+      if (!(auditId in source)) {
+        source[auditId] = 0;
+      }
+    }
+    let newSource = {};
+    const keys = Object.keys(source).filter(key => key !== 'logTs');
+    const firstKey = keys[0];
+    const firstValue = source[firstKey];
+    newSource[firstKey] = firstValue.toString();
+    for (let key of keys.slice(1)) {
+      if (key !== 'logTs') {
+        let diff = getDiff(firstValue, source[key]);
+        newSource[key] = `${source[key]} (${diff})`;
+      }
+    }
+    newSource['logTs'] = source['logTs'];
+    return newSource;
+  });
+};
+
+export const getDiff = (first, current) => {
+  if (first === 0) {
+    return '0%';
+  }
+  let result;
+  const diff = Math.ceil((current / first - 1) * 100);
+  result = diff > 0 ? '+' + diff + '%' : diff + '%';
+  return result;
+};
+
+export const getSourceDataWithCommas = sourceData => {
+  sourceData.map(source => {
+    for (const key in source) {
+      if (key !== 'logTs') {
+        let parts = source[key].split(' ');
+        let numberPart = parts[0];
+        let percentPart = parts[1] || '';
+        let number = parseInt(numberPart, 10);
+        let formattedNumber = number.toLocaleString();
+        source[key] = formattedNumber + ' ' + percentPart;
+      }
+    }
+  });
+  return sourceData;
+};
+
+let endTimeVisible = true;
 
 export const getFormContent = (inlongGroupId, initialValues, onSearch, onDataStreamSuccess) => [
   {
     type: 'select',
-    label: i18n.t('pages.GroupDetail.Audit.DataStream'),
+    label: i18n.t('pages.ModuleAudit.config.InlongStreamId'),
     name: 'inlongStreamId',
     props: {
       dropdownMatchSelectWidth: false,
+      showSearch: true,
       options: {
         requestAuto: true,
-        requestService: {
+        requestTrigger: ['onOpen', 'onSearch'],
+        requestService: keyword => ({
           url: '/stream/list',
           method: 'POST',
           data: {
+            keyword,
             pageNum: 1,
-            pageSize: 1000,
+            pageSize: 100,
             inlongGroupId,
           },
-        },
+        }),
         requestParams: {
           formatResult: result =>
             result?.list.map(item => ({
@@ -136,17 +196,20 @@ export const getFormContent = (inlongGroupId, initialValues, onSearch, onDataStr
     name: 'sinkId',
     props: values => ({
       dropdownMatchSelectWidth: false,
+      showSearch: true,
       options: {
-        requestService: {
+        requestTrigger: ['onOpen', 'onSearch'],
+        requestService: keyword => ({
           url: '/sink/list',
           method: 'POST',
           data: {
+            keyword,
             pageNum: 1,
-            pageSize: 1000,
+            pageSize: 100,
             inlongGroupId,
             inlongStreamId: values.inlongStreamId,
           },
-        },
+        }),
         requestParams: {
           formatResult: result =>
             result?.list.map(item => ({
@@ -171,21 +234,44 @@ export const getFormContent = (inlongGroupId, initialValues, onSearch, onDataStr
     type: 'datepicker',
     label: i18n.t('pages.GroupDetail.Audit.EndDate'),
     name: 'endDate',
-    initialValues: dayjs(initialValues.endDate),
+    initialValue: dayjs(initialValues.endDate),
+    rules: [
+      { required: true },
+      ({ getFieldValue }) => ({
+        validator(_, value) {
+          const dim = initialValues.timeStaticsDim;
+          if (dim === 'MINUTE') {
+            return Promise.resolve();
+          }
+          const timeDiff = value - getFieldValue('startDate');
+          console.log('timeDiff', value, getFieldValue('startDate'), timeDiff);
+          if (timeDiff >= 0) {
+            const isHourDiff = dim === 'HOUR' && timeDiff < 1000 * 60 * 60 * 24 * 3;
+            const isDayDiff = dim === 'DAY' && timeDiff < 1000 * 60 * 60 * 24 * 7;
+            if (isHourDiff || isDayDiff) {
+              return Promise.resolve();
+            }
+          }
+          return Promise.reject(new Error(i18n.t('pages.GroupDetail.Audit.DatepickerRule')));
+        },
+      }),
+    ],
     props: {
       allowClear: false,
       format: 'YYYY-MM-DD',
+      disabled: initialValues.timeStaticsDim === 'MINUTE',
       disabledDate: current => {
         const start = dayjs(initialValues.startDate);
         const dim = initialValues.timeStaticsDim;
-        if (dim === 'HOUR' || dim === 'DAY') {
-          const tooLate = current && current <= start.endOf('day');
-          const tooEarly = start && current > start.add(7, 'd').endOf('day');
-          return tooLate || tooEarly;
+        const tooEarly = current < start.add(-1, 'd').endOf('day');
+        let tooLate;
+        if (dim === 'HOUR') {
+          tooLate = current >= start.add(2, 'd').endOf('day');
         }
-        const tooLate = current && current >= start.endOf('day');
-        const tooEarly = start && current < start.add(-1, 'd').endOf('day');
-        return tooLate || tooEarly;
+        if (dim === 'DAY') {
+          tooLate = current >= start.add(6, 'd').endOf('day');
+        }
+        return current && (tooLate || tooEarly);
       },
     },
   },
@@ -200,6 +286,46 @@ export const getFormContent = (inlongGroupId, initialValues, onSearch, onDataStr
     },
   },
   {
+    type: 'select',
+    label: i18n.t('pages.GroupDetail.Audit.Item'),
+    name: 'auditIds',
+    props: {
+      style: {
+        width: 200,
+      },
+      mode: 'multiple',
+      allowClear: true,
+      showSearch: true,
+      dropdownMatchSelectWidth: false,
+      options: {
+        requestAuto: true,
+        requestTrigger: ['onOpen'],
+        requestService: () => {
+          return request('/audit/getAuditBases');
+        },
+        requestParams: {
+          formatResult: result => {
+            return result?.reduce((accumulator, item) => {
+              const existingItem = accumulator.find(
+                (i: { value: any }) => i.value === item.auditId,
+              );
+              if (!existingItem) {
+                accumulator.push({
+                  label: i18n?.language === 'cn' ? item.nameInChinese : item.nameInEnglish,
+                  value: item.auditId,
+                });
+              }
+              return accumulator;
+            }, []);
+          },
+        },
+      },
+      filterOption: (keyword: string, option: { label: any }) => {
+        return (option?.label ?? '').toLowerCase().includes(keyword.toLowerCase());
+      },
+    },
+  },
+  {
     type: (
       <Button type="primary" onClick={onSearch}>
         {i18n.t('pages.GroupDetail.Audit.Search')}
@@ -208,16 +334,26 @@ export const getFormContent = (inlongGroupId, initialValues, onSearch, onDataStr
   },
 ];
 
-export const getTableColumns = source => {
+export const getTableColumns = (source, dim) => {
   const data = source.map(item => ({
-    title: getAuditLabel(item.auditId, item.nodeType),
+    title: item.auditName,
     dataIndex: item.auditId,
-    render: text => text || 0,
+    render: text => {
+      if (text?.includes('+')) {
+        return <span style={{ color: 'red' }}>{text}</span>;
+      } else if (text?.includes('-')) {
+        return <span style={{ color: 'green' }}>{text}</span>;
+      }
+      return <span>{text}</span>;
+    },
   }));
   return [
     {
       title: i18n.t('pages.GroupDetail.Audit.Time'),
       dataIndex: 'logTs',
+      render: text => {
+        return dim === 'MINUTE' ? dayjs(text).format('HH:mm') : text;
+      },
     },
   ].concat(data);
 };

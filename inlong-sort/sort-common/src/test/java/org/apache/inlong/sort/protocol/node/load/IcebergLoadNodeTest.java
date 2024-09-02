@@ -17,8 +17,8 @@
 
 package org.apache.inlong.sort.protocol.node.load;
 
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.StringFormatInfo;
 import org.apache.inlong.sort.SerializeBaseTest;
-import org.apache.inlong.sort.formats.common.StringFormatInfo;
 import org.apache.inlong.sort.protocol.FieldInfo;
 import org.apache.inlong.sort.protocol.constant.IcebergConstant.CatalogType;
 import org.apache.inlong.sort.protocol.transformation.FieldRelation;
@@ -45,6 +45,7 @@ public class IcebergLoadNodeTest extends SerializeBaseTest<IcebergLoadNode> {
                 "id",
                 CatalogType.HIVE,
                 "thrift://localhost:9083",
-                "hdfs://localhost:9000/user/iceberg/warehouse");
+                "hdfs://localhost:9000/user/iceberg/warehouse",
+                null);
     }
 }

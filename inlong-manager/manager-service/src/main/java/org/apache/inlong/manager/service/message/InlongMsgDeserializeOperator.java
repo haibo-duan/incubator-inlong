@@ -17,18 +17,26 @@
 
 package org.apache.inlong.manager.service.message;
 
+import org.apache.inlong.common.enums.DataTypeEnum;
 import org.apache.inlong.common.enums.MessageWrapType;
 import org.apache.inlong.common.msg.AttributeConstants;
 import org.apache.inlong.common.msg.InLongMsg;
+import org.apache.inlong.common.pojo.sort.dataflow.deserialization.DeserializationConfig;
+import org.apache.inlong.common.pojo.sort.dataflow.deserialization.InlongMsgDeserializationConfig;
 import org.apache.inlong.common.util.StringUtil;
+import org.apache.inlong.manager.common.exceptions.BusinessException;
 import org.apache.inlong.manager.pojo.consume.BriefMQMessage;
+import org.apache.inlong.manager.pojo.consume.BriefMQMessage.FieldInfo;
 import org.apache.inlong.manager.pojo.stream.InlongStreamInfo;
+import org.apache.inlong.manager.pojo.stream.QueryMessageRequest;
+import org.apache.inlong.manager.service.datatype.DataTypeOperator;
+import org.apache.inlong.manager.service.datatype.DataTypeOperatorFactory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,17 +46,19 @@ import java.util.Objects;
 @Service
 public class InlongMsgDeserializeOperator implements DeserializeOperator {
 
+    @Autowired
+    public DataTypeOperatorFactory dataTypeOperatorFactory;
+
     @Override
     public boolean accept(MessageWrapType type) {
         return MessageWrapType.INLONG_MSG_V0.equals(type);
     }
 
     @Override
-    public List<BriefMQMessage> decodeMsg(InlongStreamInfo streamInfo, byte[] msgBytes, Map<String, String> headers,
-            int index) {
+    public List<BriefMQMessage> decodeMsg(InlongStreamInfo streamInfo, List<BriefMQMessage> messageList,
+            byte[] msgBytes, Map<String, String> headers, int index, QueryMessageRequest request) {
         String groupId = headers.get(AttributeConstants.GROUP_ID);
         String streamId = headers.get(AttributeConstants.STREAM_ID);
-        List<BriefMQMessage> messageList = new ArrayList<>();
         InLongMsg inLongMsg = InLongMsg.parseFrom(msgBytes);
         for (String attr : inLongMsg.getAttrs()) {
             Map<String, String> attrMap = StringUtil.splitKv(attr, INLONGMSG_ATTR_ENTRY_DELIMITER,
@@ -71,11 +81,40 @@ public class InlongMsgDeserializeOperator implements DeserializeOperator {
                 if (Objects.isNull(bodyBytes)) {
                     continue;
                 }
-                BriefMQMessage message = new BriefMQMessage(index, groupId, streamId, msgTime, attrMap.get(CLIENT_IP),
-                        new String(bodyBytes, Charset.forName(streamInfo.getDataEncoding())));
-                messageList.add(message);
+                try {
+                    String body = new String(bodyBytes, Charset.forName(streamInfo.getDataEncoding()));
+                    DataTypeOperator dataTypeOperator =
+                            dataTypeOperatorFactory.getInstance(DataTypeEnum.forType(streamInfo.getDataType()));
+                    List<FieldInfo> streamFieldList = dataTypeOperator.parseFields(body, streamInfo);
+                    if (checkIfFilter(request, streamFieldList)) {
+                        continue;
+                    }
+                    BriefMQMessage message = BriefMQMessage.builder()
+                            .id(index)
+                            .inlongGroupId(groupId)
+                            .inlongStreamId(streamId)
+                            .dt(msgTime)
+                            .clientIp(attrMap.get(CLIENT_IP))
+                            .headers(headers)
+                            .attribute(attr)
+                            .body(body)
+                            .fieldList(streamFieldList)
+                            .build();
+                    messageList.add(message);
+                } catch (Exception e) {
+                    String errMsg = String.format("decode msg failed for groupId=%s, streamId=%s", groupId, streamId);
+                    log.error(errMsg, e);
+                    throw new BusinessException(errMsg);
+                }
             }
         }
         return messageList;
+    }
+
+    @Override
+    public DeserializationConfig getDeserializationConfig(InlongStreamInfo streamInfo) {
+        InlongMsgDeserializationConfig inlongMsgDeserializationConfig = new InlongMsgDeserializationConfig();
+        inlongMsgDeserializationConfig.setStreamId(streamInfo.getInlongStreamId());
+        return inlongMsgDeserializationConfig;
     }
 }

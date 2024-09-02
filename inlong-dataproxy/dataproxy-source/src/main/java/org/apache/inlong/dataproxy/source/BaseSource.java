@@ -17,6 +17,7 @@
 
 package org.apache.inlong.dataproxy.source;
 
+import org.apache.inlong.common.heartbeat.ReportResourceType;
 import org.apache.inlong.common.metric.MetricRegister;
 import org.apache.inlong.dataproxy.admin.ProxyServiceMBean;
 import org.apache.inlong.dataproxy.channel.FailoverChannelProcessor;
@@ -24,6 +25,7 @@ import org.apache.inlong.dataproxy.config.CommonConfigHolder;
 import org.apache.inlong.dataproxy.config.ConfigManager;
 import org.apache.inlong.dataproxy.config.holder.ConfigUpdateCallback;
 import org.apache.inlong.dataproxy.consts.AttrConstants;
+import org.apache.inlong.dataproxy.consts.SourceConstants;
 import org.apache.inlong.dataproxy.consts.StatConstants;
 import org.apache.inlong.dataproxy.metrics.DataProxyMetricItem;
 import org.apache.inlong.dataproxy.metrics.DataProxyMetricItemSet;
@@ -86,6 +88,8 @@ public abstract class BaseSource
     // source serviced port
     protected int srcPort;
     protected String strPort;
+    // report source name
+    protected String rptSrcType;
     // message factory name
     protected String msgFactoryName;
     // message handler name
@@ -143,8 +147,14 @@ public abstract class BaseSource
         this.srcHost = getHostIp(context);
         this.srcPort = getHostPort(context);
         this.strPort = String.valueOf(this.srcPort);
+        // get source logic type
+        String tmpVal = context.getString(
+                SourceConstants.SRCCXT_LOGIC_EXECUTE_TYPE, ReportResourceType.INLONG);
+        Preconditions.checkArgument(StringUtils.isNotBlank(tmpVal),
+                SourceConstants.SRCCXT_LOGIC_EXECUTE_TYPE + " config is blank");
+        this.rptSrcType = tmpVal.trim().toUpperCase();
         // get message factory
-        String tmpVal = context.getString(SourceConstants.SRCCXT_MSG_FACTORY_NAME,
+        tmpVal = context.getString(SourceConstants.SRCCXT_MSG_FACTORY_NAME,
                 ServerMessageFactory.class.getName()).trim();
         Preconditions.checkArgument(StringUtils.isNotBlank(tmpVal),
                 SourceConstants.SRCCXT_MSG_FACTORY_NAME + " config is blank");
@@ -266,7 +276,12 @@ public abstract class BaseSource
         }
         startSource();
         // register
+        ConfigManager.getInstance().addSourceReportInfo(srcHost,
+                String.valueOf(srcPort), rptSrcType, getProtocolName().toUpperCase());
         AdminServiceRegister.register(ProxyServiceMBean.MBEAN_TYPE, this.cachedSrcName, this);
+        logger.info("Source {} started at ({}:{}), {}={}, Protocal={}", this.getCachedSrcName(),
+                srcHost, srcPort, SourceConstants.SRCCXT_LOGIC_EXECUTE_TYPE, rptSrcType,
+                getProtocolName().toUpperCase());
     }
 
     @Override
@@ -470,7 +485,7 @@ public abstract class BaseSource
         if (result) {
             metricItem.readSuccessCount.incrementAndGet();
             metricItem.readSuccessSize.addAndGet(size);
-            AuditUtils.add(AuditUtils.AUDIT_ID_DATAPROXY_READ_SUCCESS, event);
+            AuditUtils.addInputSuccess(event);
         } else {
             metricItem.readFailCount.incrementAndGet();
             metricItem.readFailSize.addAndGet(size);

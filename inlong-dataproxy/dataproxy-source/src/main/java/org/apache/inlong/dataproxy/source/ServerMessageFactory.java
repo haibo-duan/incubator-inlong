@@ -17,6 +17,8 @@
 
 package org.apache.inlong.dataproxy.source;
 
+import org.apache.inlong.dataproxy.consts.SourceConstants;
+
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
@@ -76,7 +78,7 @@ public class ServerMessageFactory extends ChannelInitializer<SocketChannel> {
                 ChannelInboundHandlerAdapter messageHandler =
                         (ChannelInboundHandlerAdapter) ctor.newInstance(source);
                 ch.pipeline().addLast("messageHandler", messageHandler);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 LOG.error("{} newInstance {} failure!", source.getCachedSrcName(),
                         source.getMessageHandlerName(), e);
             }

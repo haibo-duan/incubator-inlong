@@ -18,6 +18,7 @@
 package org.apache.inlong.manager.service.sink;
 
 import org.apache.inlong.manager.dao.entity.StreamSinkEntity;
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.UpdateResult;
 import org.apache.inlong.manager.pojo.group.InlongGroupInfo;
@@ -51,13 +52,13 @@ public interface StreamSinkService {
     Integer save(SinkRequest request, String operator);
 
     /**
-     * Save the sink info.
+     * Batch save the sink info.
      *
-     * @param request sink request need to save
-     * @param opInfo userinfo of operator
-     * @return sink id after saving
+     * @param requestList sink request list need to save
+     * @param operator name of operator
+     * @return sink id list after saving
      */
-    Integer save(SinkRequest request, UserInfo opInfo);
+    List<BatchResult> batchSave(List<SinkRequest> requestList, String operator);
 
     /**
      * Get stream sink info based on id.
@@ -66,15 +67,6 @@ public interface StreamSinkService {
      * @return detail of stream sink info
      */
     StreamSink get(Integer id);
-
-    /**
-     * Get stream sink info based on id.
-     *
-     * @param id sink id
-     * @param opInfo userinfo of operator
-     * @return detail of stream sink info
-     */
-    StreamSink get(Integer id, UserInfo opInfo);
 
     /**
      * List the stream sinks based on inlong group id and inlong stream id.
@@ -124,6 +116,15 @@ public interface StreamSinkService {
     PageResult<? extends StreamSink> listByCondition(SinkPageRequest request, String operator);
 
     /**
+     * Paging query stream sink detail info based on conditions.
+     *
+     * @param request paging request
+     * @param operator operator
+     * @return sink detail page list
+     */
+    PageResult<Map<String, Object>> listDetail(SinkPageRequest request, String operator);
+
+    /**
      * Paging query stream sink info based on conditions.
      *
      * @param request paging request
@@ -140,15 +141,6 @@ public interface StreamSinkService {
      * @return whether succeed
      */
     Boolean update(SinkRequest sinkRequest, String operator);
-
-    /**
-     * Modify stream sink info by id.
-     *
-     * @param sinkRequest stream sink request that needs to be modified
-     * @param opInfo userinfo of operator
-     * @return whether succeed
-     */
-    Boolean update(SinkRequest sinkRequest, UserInfo opInfo);
 
     /**
      * Modify stream sink info by key.
@@ -177,16 +169,6 @@ public interface StreamSinkService {
      * @return whether succeed
      */
     Boolean delete(Integer id, Boolean startProcess, String operator);
-
-    /**
-     * Delete the stream sink by the given id and sink type.
-     *
-     * @param id stream sink id
-     * @param startProcess whether to start the process after saving or updating
-     * @param opInfo userinfo of operator
-     * @return whether succeed
-     */
-    Boolean delete(Integer id, Boolean startProcess, UserInfo opInfo);
 
     /**
      * Delete the stream sink by given group id, stream id, and sink name.

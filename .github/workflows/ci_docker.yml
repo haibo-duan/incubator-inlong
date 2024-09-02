@@ -52,10 +52,22 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      # Release space size
+      - name: Remove unnecessary packages
+        run: |
+          echo "=== Before pruning ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          echo "=== After pruning ==="
+          df -h
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 8
           distribution: adopt
@@ -73,33 +85,13 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Cache Maven packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
-            ~/.m2/repository
+            ~/.m2/repository/*/*/*
             !~/.m2/repository/org/apache/inlong
           key: ${{ runner.os }}-inlong-docker-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-inlong-docker
-
-      - name: Set up swapfile path
-        run: |
-          sudo sysctl -w vm.max_map_count=262144
-          sudo sysctl -w fs.file-max=65536
-          sudo fallocate -l 5G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-
-      - name: Remove unnecessary packages
-        run: |
-          echo "=== Before pruning ==="
-          df -h
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          echo
-          echo "=== After pruning ==="
-          df -h
 
       - name: Build Docker images
         run: mvn --batch-mode --update-snapshots -e -V clean package -DskipTests -Pdocker
@@ -153,3 +145,6 @@ jobs:
         env:
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Clean up build packages
+        run: mvn clean

@@ -51,14 +51,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.apache.flink.api.common.JobStatus.RUNNING;
-
 /**
  * Flink task operation, such restart or stop flink job.
  */
 @Slf4j
 public class FlinkOperation {
 
+    private static final Integer TRY_MAX_TIMES = 60;
     private static final String CONFIG_FILE = "application.properties";
     private static final String CONNECTOR_DIR_KEY = "sort.connector.dir";
     private static final String JOB_TERMINATED_MSG = "the job not found by id %s, "
@@ -69,10 +68,14 @@ public class FlinkOperation {
     private static final String CONNECTOR_JAR_PATTERN = "^sort-connector-(?i)(%s).*jar$";
     private static final String ALL_CONNECTOR_JAR_PATTERN = "^sort-connector-.*jar$";
     private static Properties properties;
-    private final FlinkService flinkService;
 
-    public FlinkOperation(FlinkService flinkService) {
-        this.flinkService = flinkService;
+    private static class FlinkOperationHolder {
+
+        private static final FlinkOperation INSTANCE = new FlinkOperation();
+    }
+
+    public static FlinkOperation getInstance() {
+        return FlinkOperationHolder.INSTANCE;
     }
 
     /**
@@ -104,16 +107,15 @@ public class FlinkOperation {
      * Restart the Flink job.
      */
     public void restart(FlinkInfo flinkInfo) throws Exception {
-        String jobId = flinkInfo.getJobId();
-        boolean terminated = isNullOrTerminated(jobId);
+        boolean terminated = isNullOrTerminated(flinkInfo);
         if (terminated) {
-            String message = String.format("restart job failed, as " + JOB_TERMINATED_MSG, jobId);
+            String message = String.format("restart job failed, as " + JOB_TERMINATED_MSG, flinkInfo.getJobId());
             log.error(message);
             throw new Exception(message);
         }
 
         Future<?> future = TaskRunService.submit(
-                new IntegrationTaskRunner(flinkService, flinkInfo, TaskCommitType.RESTART.getCode()));
+                new IntegrationTaskRunner(flinkInfo, TaskCommitType.RESTART.getCode()));
         future.get();
     }
 
@@ -121,24 +123,25 @@ public class FlinkOperation {
      * Start the Flink job, if the job id was not empty, restore it.
      */
     public void start(FlinkInfo flinkInfo) throws Exception {
-        String jobId = flinkInfo.getJobId();
         try {
             // Start a new task without savepoint
-            if (StringUtils.isEmpty(jobId)) {
-                IntegrationTaskRunner taskRunner = new IntegrationTaskRunner(flinkService, flinkInfo,
+            if (StringUtils.isEmpty(flinkInfo.getJobId())) {
+                IntegrationTaskRunner taskRunner = new IntegrationTaskRunner(flinkInfo,
                         TaskCommitType.START_NOW.getCode());
                 Future<?> future = TaskRunService.submit(taskRunner);
                 future.get();
             } else {
                 // Restore an old task with savepoint
-                boolean noSavepoint = isNullOrTerminated(jobId) || StringUtils.isEmpty(flinkInfo.getSavepointPath());
+                boolean noSavepoint =
+                        isNullOrTerminated(flinkInfo) || StringUtils.isEmpty(flinkInfo.getSavepointPath());
                 if (noSavepoint) {
-                    String message = String.format("restore job failed, as " + JOB_TERMINATED_MSG, jobId);
+                    String message =
+                            String.format("restore job failed, as " + JOB_TERMINATED_MSG, flinkInfo.getJobId());
                     log.error(message);
                     throw new Exception(message);
                 }
 
-                IntegrationTaskRunner taskRunner = new IntegrationTaskRunner(flinkService, flinkInfo,
+                IntegrationTaskRunner taskRunner = new IntegrationTaskRunner(flinkInfo,
                         TaskCommitType.RESUME.getCode());
                 Future<?> future = TaskRunService.submit(taskRunner);
                 future.get();
@@ -149,37 +152,6 @@ public class FlinkOperation {
         }
     }
 
-    /**
-     * Check whether there are duplicate NodeIds in different relations.
-     * <p/>
-     * The JSON data in the dataflow is in the reverse order of the nodes in the actual dataflow.
-     * For example, data flow A -> B -> C, the generated topological relationship is [[B,C],[A,B]],
-     * then the input node B in the first relation [B,C] is the second output node B in relation [A,B].
-     * <p/>
-     * The example of dataflow:
-     * <blockquote><pre>
-     * {
-     *     "groupId": "test_group",
-     *     "streams": [
-     *         {
-     *             "streamId": "test_stream",
-     *             "relations": [
-     *                 {
-     *                     "type": "baseRelation",
-     *                     "inputs": [ "node_3" ],
-     *                     "outputs": [ "node_4" ]
-     *                 },
-     *                 {
-     *                     "type": "innerJoin",
-     *                     "inputs": [ "node_1", "node_2" ],
-     *                     "outputs": [ "node_3"  ]
-     *                 }
-     *             ]
-     *         }
-     *     ]
-     * }
-     * </pre></blockquote>
-     */
     private void checkNodeIds(String dataflow) throws Exception {
         JsonNode relations = JsonUtils.parseTree(dataflow).get(InlongConstants.STREAMS)
                 .get(0).get(InlongConstants.RELATIONS);
@@ -294,16 +266,15 @@ public class FlinkOperation {
      * Stop the Flink job.
      */
     public void stop(FlinkInfo flinkInfo) throws Exception {
-        String jobId = flinkInfo.getJobId();
-        boolean terminated = isNullOrTerminated(jobId);
+        boolean terminated = isNullOrTerminated(flinkInfo);
         if (terminated) {
-            String message = String.format("stop job failed, as " + JOB_TERMINATED_MSG, jobId);
+            String message = String.format("stop job failed, as " + JOB_TERMINATED_MSG, flinkInfo.getJobId());
             log.error(message);
             throw new Exception(message);
         }
 
         Future<?> future = TaskRunService.submit(
-                new IntegrationTaskRunner(flinkService, flinkInfo, TaskCommitType.STOP.getCode()));
+                new IntegrationTaskRunner(flinkInfo, TaskCommitType.STOP.getCode()));
         future.get();
     }
 
@@ -312,7 +283,7 @@ public class FlinkOperation {
      */
     public void delete(FlinkInfo flinkInfo) throws Exception {
         String jobId = flinkInfo.getJobId();
-        JobDetailsInfo jobDetailsInfo = flinkService.getJobDetail(jobId);
+        JobDetailsInfo jobDetailsInfo = FlinkService.getInstance().getJobDetail(flinkInfo);
         if (jobDetailsInfo == null) {
             throw new Exception(String.format("delete job failed as the job [%s] not found", jobId));
         }
@@ -325,14 +296,14 @@ public class FlinkOperation {
         }
 
         Future<?> future = TaskRunService.submit(
-                new IntegrationTaskRunner(flinkService, flinkInfo, TaskCommitType.DELETE.getCode()));
+                new IntegrationTaskRunner(flinkInfo, TaskCommitType.DELETE.getCode()));
         future.get();
     }
 
     /**
      * Status of Flink job.
      */
-    public void pollJobStatus(FlinkInfo flinkInfo) throws Exception {
+    public void pollJobStatus(FlinkInfo flinkInfo, JobStatus expectStatus) throws Exception {
         if (flinkInfo.isException()) {
             throw new BusinessException("startup failed: " + flinkInfo.getExceptionMsg());
         }
@@ -341,41 +312,42 @@ public class FlinkOperation {
             log.error("job id cannot empty for {}", flinkInfo);
             throw new Exception("job id cannot empty");
         }
-
-        while (true) {
+        int retryTimes = 0;
+        while (retryTimes <= TRY_MAX_TIMES) {
             try {
-                JobDetailsInfo jobDetailsInfo = flinkService.getJobDetail(jobId);
+                JobDetailsInfo jobDetailsInfo = FlinkService.getInstance().getJobDetail(flinkInfo);
                 if (jobDetailsInfo == null) {
                     log.error("job detail not found by {}", jobId);
                     throw new Exception(String.format("job detail not found by %s", jobId));
                 }
 
                 JobStatus jobStatus = jobDetailsInfo.getJobStatus();
-                if (jobStatus.isTerminalState()) {
+                if (jobStatus.isTerminalState() && expectStatus != JobStatus.CANCELED) {
                     log.error("job was terminated for {}, exception: {}", jobId, flinkInfo.getExceptionMsg());
                     throw new Exception("job was terminated for " + jobId);
                 }
 
-                if (jobStatus == RUNNING) {
-                    log.info("job status is Running for {}", jobId);
+                if (jobStatus == expectStatus) {
+                    log.info("job status is {} for {}", jobStatus, jobId);
                     break;
                 }
-                log.info("job was not Running for {}", jobId);
-                TimeUnit.SECONDS.sleep(5);
+                log.info("job status is {} for {}", jobStatus, jobId);
             } catch (Exception e) {
                 log.error("poll job status error for {}, exception: ", flinkInfo, e);
             }
+            TimeUnit.SECONDS.sleep(5);
+            retryTimes++;
         }
     }
 
     /**
      * Check whether the job was terminated by the given job id.
      */
-    private boolean isNullOrTerminated(String jobId) throws Exception {
-        JobDetailsInfo jobDetailsInfo = flinkService.getJobDetail(jobId);
+    private boolean isNullOrTerminated(FlinkInfo flinkInfo) throws Exception {
+        JobDetailsInfo jobDetailsInfo = FlinkService.getInstance().getJobDetail(flinkInfo);
         boolean terminated = jobDetailsInfo == null || jobDetailsInfo.getJobStatus() == null;
         if (terminated) {
-            log.warn("job detail or job status was null for [{}]", jobId);
+            log.warn("job detail or job status was null for [{}]", flinkInfo.getJobId());
             return true;
         }
 

@@ -17,7 +17,13 @@
 
 package org.apache.inlong.manager.plugin.listener;
 
+import org.apache.inlong.manager.common.consts.InlongConstants;
+import org.apache.inlong.manager.common.enums.GroupOperateType;
 import org.apache.inlong.manager.common.enums.TaskEvent;
+import org.apache.inlong.manager.plugin.util.FlinkUtils;
+import org.apache.inlong.manager.pojo.stream.InlongStreamInfo;
+import org.apache.inlong.manager.pojo.workflow.form.process.ProcessForm;
+import org.apache.inlong.manager.pojo.workflow.form.process.StreamResourceProcessForm;
 import org.apache.inlong.manager.workflow.WorkflowContext;
 import org.apache.inlong.manager.workflow.event.ListenerResult;
 import org.apache.inlong.manager.workflow.event.task.SortOperateListener;
@@ -41,13 +47,34 @@ public class StartupStreamListener implements SortOperateListener {
      */
     @Override
     public boolean accept(WorkflowContext workflowContext) {
-        log.info("not need to start the sort task for InlongStream");
-        return false;
+        ProcessForm processForm = workflowContext.getProcessForm();
+        String groupId = processForm.getInlongGroupId();
+        if (!(processForm instanceof StreamResourceProcessForm)) {
+            log.info("not add startup stream listener, not StreamResourceProcessForm for groupId [{}]", groupId);
+            return false;
+        }
+
+        StreamResourceProcessForm streamProcessForm = (StreamResourceProcessForm) processForm;
+        String streamId = streamProcessForm.getStreamInfo().getInlongStreamId();
+        if (streamProcessForm.getGroupOperateType() != GroupOperateType.INIT) {
+            log.info("not add startup stream listener, as the operate was not INIT for groupId [{}] streamId [{}]",
+                    groupId, streamId);
+            return false;
+        }
+
+        log.info("add startup stream listener for groupId [{}] streamId [{}]", groupId, streamId);
+        return InlongConstants.STANDARD_MODE.equals(streamProcessForm.getGroupInfo().getInlongGroupMode());
     }
 
     @Override
     public ListenerResult listen(WorkflowContext context) throws Exception {
-        return ListenerResult.success();
+        ProcessForm processForm = context.getProcessForm();
+        StreamResourceProcessForm streamResourceProcessForm = (StreamResourceProcessForm) processForm;
+        InlongStreamInfo streamInfo = streamResourceProcessForm.getStreamInfo();
+        log.info("inlong stream :{} ext info: {}", streamInfo.getInlongStreamId(), streamInfo.getExtList());
+
+        String jobName = FlinkUtils.genFlinkJobName(processForm, streamInfo);
+        return FlinkUtils.submitFlinkJob(streamInfo, jobName);
     }
 
 }

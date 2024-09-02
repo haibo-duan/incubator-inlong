@@ -109,10 +109,10 @@ public class InlongStreamInfo extends BaseInlongStream {
     @ApiModelProperty(value = "Name of modifier")
     private String modifier;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "GMT+8")
     private Date createTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "GMT+8")
     private Date modifyTime;
 
     @ApiModelProperty(value = "Field list")
@@ -133,8 +133,20 @@ public class InlongStreamInfo extends BaseInlongStream {
     @ApiModelProperty(value = "The message body wrap type, including: RAW, INLONG_MSG_V0, INLONG_MSG_V1, etc")
     private String wrapType;
 
+    @ApiModelProperty(value = "If use extended fields")
+    private Boolean useExtendedFields;
+
+    @ApiModelProperty(value = "Extended field size")
+    private Integer extendedFieldSize;
+
+    @ApiModelProperty("The multiple enable of sink")
+    private Boolean sinkMultipleEnable;
+
+    @ApiModelProperty("Whether to sync field")
+    private Boolean syncField = false;
+
     @ApiModelProperty(value = "Whether to ignore the parse errors of field value")
-    private Boolean ignoreParseError = true;
+    private Boolean ignoreParseError;
 
     public InlongStreamRequest genRequest() {
         return CommonBeanUtils.copyProperties(this, InlongStreamRequest::new);

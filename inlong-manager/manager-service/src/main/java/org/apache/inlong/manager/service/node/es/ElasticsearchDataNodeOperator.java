@@ -17,6 +17,8 @@
 
 package org.apache.inlong.manager.service.node.es;
 
+import org.apache.inlong.common.pojo.sort.node.EsNodeConfig;
+import org.apache.inlong.common.pojo.sort.node.NodeConfig;
 import org.apache.inlong.manager.common.consts.DataNodeType;
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
@@ -34,7 +36,6 @@ import org.apache.inlong.manager.service.resource.sink.es.ElasticsearchConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.client.RequestOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,9 @@ import org.springframework.stereotype.Service;
 public class ElasticsearchDataNodeOperator extends AbstractDataNodeOperator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchDataNodeOperator.class);
+
+    // in order to compatible with the old sortstandalone version
+    public static final String KEY_PASSWORD = "password";
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -65,6 +69,8 @@ public class ElasticsearchDataNodeOperator extends AbstractDataNodeOperator {
         try {
             ElasticsearchDataNodeDTO dto =
                     ElasticsearchDataNodeDTO.getFromRequest(esRequest, targetEntity.getExtParams());
+            dto.setHttpHosts(request.getUrl());
+            dto.setPassword(request.getToken());
             targetEntity.setExtParams(objectMapper.writeValueAsString(dto));
         } catch (Exception e) {
             throw new BusinessException(ErrorCodeEnum.SOURCE_INFO_INCORRECT,
@@ -103,7 +109,7 @@ public class ElasticsearchDataNodeOperator extends AbstractDataNodeOperator {
         client.setEsConfig(config);
         boolean result;
         try {
-            result = client.getEsClient().ping(RequestOptions.DEFAULT);
+            result = client.ping();
             LOGGER.info("elasticsearch connection is {} for url={}, username={}, password={}", result, url, username,
                     password);
             return result;
@@ -113,6 +119,16 @@ public class ElasticsearchDataNodeOperator extends AbstractDataNodeOperator {
             LOGGER.error(errMsg, e);
             throw new BusinessException(errMsg);
         }
+    }
+
+    @Override
+    public NodeConfig getNodeConfig(DataNodeEntity dataNodeEntity) {
+        DataNodeInfo dataNodeInfo = this.getFromEntity(dataNodeEntity);
+        ElasticsearchDataNodeDTO dto = ElasticsearchDataNodeDTO.getFromJson(dataNodeInfo.getExtParams());
+        EsNodeConfig esNodeConfig = CommonBeanUtils.copyProperties(dataNodeInfo, EsNodeConfig::new);
+        CommonBeanUtils.copyProperties(dto, esNodeConfig);
+        esNodeConfig.setNodeName(dataNodeInfo.getName());
+        return esNodeConfig;
     }
 
 }

@@ -18,10 +18,12 @@
 package org.apache.inlong.manager.web.controller.openapi;
 
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
+import org.apache.inlong.manager.common.enums.OperationTarget;
 import org.apache.inlong.manager.common.enums.OperationType;
 import org.apache.inlong.manager.common.util.Preconditions;
 import org.apache.inlong.manager.common.validation.SaveValidation;
 import org.apache.inlong.manager.common.validation.UpdateValidation;
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.group.InlongGroupBriefInfo;
 import org.apache.inlong.manager.pojo.group.InlongGroupInfo;
@@ -67,7 +69,7 @@ public class OpenInLongGroupController {
     public Response<InlongGroupInfo> get(@PathVariable String groupId) {
         Preconditions.expectNotBlank(groupId, ErrorCodeEnum.INVALID_PARAMETER, "groupId cannot be blank");
         Preconditions.expectNotNull(LoginUserUtils.getLoginUser(), ErrorCodeEnum.LOGIN_USER_EMPTY);
-        return Response.success(groupService.get(groupId, LoginUserUtils.getLoginUser()));
+        return Response.success(groupService.get(groupId));
     }
 
     @PostMapping(value = "/group/list")
@@ -79,26 +81,35 @@ public class OpenInLongGroupController {
     }
 
     @RequestMapping(value = "/group/save", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.CREATE)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.GROUP)
     @ApiOperation(value = "Save inlong group")
     public Response<String> save(@Validated(SaveValidation.class) @RequestBody InlongGroupRequest groupRequest) {
         Preconditions.expectNotNull(groupRequest, ErrorCodeEnum.INVALID_PARAMETER, "request cannot be null");
         Preconditions.expectNotNull(LoginUserUtils.getLoginUser(), ErrorCodeEnum.LOGIN_USER_EMPTY);
-        return Response.success(groupService.save(groupRequest, LoginUserUtils.getLoginUser()));
+        return Response.success(groupService.save(groupRequest, LoginUserUtils.getLoginUser().getName()));
+    }
+
+    @RequestMapping(value = "/group/batchSave", method = RequestMethod.POST)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.GROUP)
+    @ApiOperation(value = "Batch Save inlong group")
+    public Response<List<BatchResult>> batchSave(
+            @Validated(SaveValidation.class) @RequestBody List<InlongGroupRequest> groupRequestList) {
+        String operator = LoginUserUtils.getLoginUser().getName();
+        return Response.success(groupService.batchSave(groupRequestList, operator));
     }
 
     @RequestMapping(value = "/group/update", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.UPDATE)
+    @OperationLog(operation = OperationType.UPDATE, operationTarget = OperationTarget.GROUP)
     @ApiOperation(value = "Update inlong group")
     public Response<String> update(@Validated(UpdateValidation.class) @RequestBody InlongGroupRequest groupRequest) {
         Preconditions.expectNotNull(groupRequest, ErrorCodeEnum.INVALID_PARAMETER, "request cannot be null");
         Preconditions.expectNotNull(LoginUserUtils.getLoginUser(), ErrorCodeEnum.LOGIN_USER_EMPTY);
-        return Response.success(groupService.update(groupRequest, LoginUserUtils.getLoginUser()));
+        return Response.success(groupService.update(groupRequest, LoginUserUtils.getLoginUser().getName()));
     }
 
     @RequestMapping(value = "/group/delete/{groupId}", method = RequestMethod.DELETE)
     @ApiOperation(value = "Delete inlong group info")
-    @OperationLog(operation = OperationType.DELETE)
+    @OperationLog(operation = OperationType.DELETE, operationTarget = OperationTarget.GROUP)
     @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class, required = true)
     public Response<Boolean> delete(@PathVariable String groupId) {
         Preconditions.expectNotBlank(groupId, ErrorCodeEnum.INVALID_PARAMETER, "groupId cannot be blank");

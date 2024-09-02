@@ -17,7 +17,7 @@
 
 package org.apache.inlong.sort.function;
 
-import org.apache.inlong.sort.formats.common.StringFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.StringFormatInfo;
 import org.apache.inlong.sort.protocol.FieldInfo;
 import org.apache.inlong.sort.protocol.transformation.StringConstantParam;
 
@@ -89,7 +89,7 @@ public class EncryptFunctionTest extends AbstractTestBase {
             result.add(next);
         }
         // step 5. Whether the comparison results are as expected
-        String expect = "E102423217AE84A965937D54187A8535";
+        String expect = "/Uz8v57vMbQ=";
         Assert.assertEquals(expect, result.get(0));
     }
 

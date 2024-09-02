@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotNull;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -64,10 +65,13 @@ public class PulsarSourceDTO {
     private String primaryKey;
 
     @ApiModelProperty(value = "Data encoding format: UTF-8, GBK")
-    private String dataEncoding;
+    private String dataEncoding = StandardCharsets.UTF_8.toString();
 
     @ApiModelProperty(value = "Data separator")
-    private String dataSeparator;
+    private String dataSeparator = String.valueOf((int) '|');
+
+    @ApiModelProperty(value = "KV separator")
+    private String kvSeparator;
 
     @ApiModelProperty(value = "Data field escape symbol")
     private String dataEscapeChar;
@@ -76,6 +80,18 @@ public class PulsarSourceDTO {
             + "Available options are earliest, latest, external-subscription, and specific-offsets.")
     @Builder.Default
     private String scanStartupMode = "earliest";
+
+    @ApiModelProperty(value = "The message body wrap  wrap type, including: RAW, INLONG_MSG_V0, INLONG_MSG_V1, etc")
+    private String wrapType;
+
+    @ApiModelProperty(value = "Client auth plugin class name")
+    private String clientAuthPluginClassName;
+
+    @ApiModelProperty(value = "Client auth params")
+    private String clientAuthParams;
+
+    @ApiModelProperty("Reset subscription time")
+    private Long resetTime;
 
     @ApiModelProperty("Properties for Pulsar")
     private Map<String, Object> properties;

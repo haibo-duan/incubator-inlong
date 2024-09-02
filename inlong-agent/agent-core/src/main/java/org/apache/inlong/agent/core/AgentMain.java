@@ -106,11 +106,11 @@ public class AgentMain {
      * Main entrance.
      */
     public static void main(String[] args) throws Exception {
+        Thread.currentThread().setName("main-thread");
         CommandLine cl = initOptions(args);
         assert cl != null;
         initAgentConf(cl);
-        AuditUtils.initAudit();
-
+        AuditUtils.initAudit(AgentConfiguration.getAgentConf());
         AgentManager manager = new AgentManager();
         try {
             manager.start();

@@ -18,13 +18,13 @@
 package org.apache.inlong.manager.pojo.sort.node.base;
 
 import org.apache.inlong.common.enums.DataTypeEnum;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.StringTypeInfo;
 import org.apache.inlong.manager.common.enums.FieldType;
 import org.apache.inlong.manager.common.fieldtype.strategy.FieldTypeMappingStrategy;
 import org.apache.inlong.manager.pojo.sink.SinkField;
 import org.apache.inlong.manager.pojo.sort.util.FieldInfoUtils;
 import org.apache.inlong.manager.pojo.stream.StreamField;
 import org.apache.inlong.manager.pojo.stream.StreamNode;
-import org.apache.inlong.sort.formats.common.StringTypeInfo;
 import org.apache.inlong.sort.protocol.FieldInfo;
 import org.apache.inlong.sort.protocol.node.LoadNode;
 import org.apache.inlong.sort.protocol.node.format.CanalJsonFormat;
@@ -40,6 +40,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -144,5 +145,17 @@ public interface LoadNodeProvider extends NodeProvider {
 
     default List<SinkField> addSinkMetaFields(List<SinkField> sinkFields) {
         return sinkFields;
+    }
+
+    default Boolean isSinkMultiple(StreamNode nodeInfo) {
+        return false;
+    }
+
+    default List<StreamField> addStreamFieldsForSinkMultiple(List<StreamField> streamFields) {
+        return new ArrayList<>();
+    }
+
+    default List<SinkField> addSinkFieldsForSinkMultiple(List<SinkField> sinkFields) {
+        return new ArrayList<>();
     }
 }

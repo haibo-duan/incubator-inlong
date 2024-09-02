@@ -25,7 +25,25 @@ public class InlongStreamId {
     private String inlongGroupId;
     private String inlongStreamId;
     private String topic;
+    private String dataType;
+    private String wrapType;
     private String extParams;
+
+    public String getDataType() {
+        return dataType;
+    }
+
+    public String getWrapType() {
+        return wrapType;
+    }
+
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
+    }
+
+    public void setWrapType(String wrapType) {
+        this.wrapType = wrapType;
+    }
 
     /**
      * get inlongGroupId

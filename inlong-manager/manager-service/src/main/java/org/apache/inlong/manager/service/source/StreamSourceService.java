@@ -17,8 +17,10 @@
 
 package org.apache.inlong.manager.service.source;
 
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.group.InlongGroupInfo;
+import org.apache.inlong.manager.pojo.source.DataAddTaskRequest;
 import org.apache.inlong.manager.pojo.source.SourcePageRequest;
 import org.apache.inlong.manager.pojo.source.SourceRequest;
 import org.apache.inlong.manager.pojo.source.StreamSource;
@@ -43,13 +45,13 @@ public interface StreamSourceService {
     Integer save(SourceRequest request, String operator);
 
     /**
-     * Save the source information
+     * Batch save the source information
      *
-     * @param request Source request.
-     * @param opInfo userinfo of operator
-     * @return source id after saving.
+     * @param requestList Source request list.
+     * @param operator Operator's name.
+     * @return source id list after saving.
      */
-    Integer save(SourceRequest request, UserInfo opInfo);
+    List<BatchResult> batchSave(List<SourceRequest> requestList, String operator);
 
     /**
      * Query source information based on id
@@ -58,15 +60,6 @@ public interface StreamSourceService {
      * @return Source info
      */
     StreamSource get(Integer id);
-
-    /**
-     * Query source information based on id
-     *
-     * @param id source id.
-     * @param opInfo userinfo of operator
-     * @return Source info
-     */
-    StreamSource get(Integer id, UserInfo opInfo);
 
     /**
      * Query source information based on inlong group id and inlong stream id.
@@ -125,15 +118,6 @@ public interface StreamSourceService {
     Boolean update(SourceRequest sourceRequest, String operator);
 
     /**
-     * Modify data source information
-     *
-     * @param sourceRequest Information that needs to be modified
-     * @param opInfo userinfo of operator
-     * @return whether succeed
-     */
-    Boolean update(SourceRequest sourceRequest, UserInfo opInfo);
-
-    /**
      * Update source status by the given groupId and streamId
      *
      * @param groupId The belongs group id.
@@ -152,15 +136,6 @@ public interface StreamSourceService {
      * @return Whether succeed
      */
     Boolean delete(Integer id, String operator);
-
-    /**
-     * Delete the stream source by the given id and source type.
-     *
-     * @param id The primary key of the source.
-     * @param opInfo userinfo of operator
-     * @return Whether succeed
-     */
-    Boolean delete(Integer id, UserInfo opInfo);
 
     /**
      * Force deletes the stream source by groupId and streamId
@@ -229,4 +204,22 @@ public interface StreamSourceService {
         return true;
     }
 
+    /**
+     * Save the data add task information
+     *
+     * @param request Source request.
+     * @param operator Operator's name.
+     * @return source id after saving.
+     */
+    Integer addDataAddTask(DataAddTaskRequest request, String operator);
+
+    /**
+     * Batch Save the data add task information
+     *
+     * @param requestList Source request list.
+     * @param operator Operator's name.
+     * @return source id list after saving.
+     */
+    List<Integer> batchAddDataAddTask(String groupId, String streamId, List<DataAddTaskRequest> requestList,
+            String operator);
 }

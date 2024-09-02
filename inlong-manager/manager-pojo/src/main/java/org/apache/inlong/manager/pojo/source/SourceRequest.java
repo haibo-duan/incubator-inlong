@@ -101,9 +101,18 @@ public class SourceRequest {
     @Length(min = 1, max = 163840, message = "length must be between 1 and 163840")
     private String snapshot;
 
+    @ApiModelProperty("Data Time zone")
+    private String dataTimeZone;
+
+    @ApiModelProperty(value = "Whether to sync schema from source after saving or updating. Default is false")
+    private Boolean enableSyncSchema = false;
+
     @ApiModelProperty("Version")
     @NotNull(groups = UpdateValidation.class, message = "version cannot be null")
     private Integer version;
+
+    @ApiModelProperty(value = "Audit version")
+    private String auditVersion;
 
     @ApiModelProperty("Field list, only support when inlong group in light weight mode")
     private List<StreamField> fieldList;
@@ -112,7 +121,7 @@ public class SourceRequest {
     private Map<String, Object> properties = new LinkedHashMap<>();
 
     @JsonIgnore
-    @ApiModelProperty("Sub source information of existing agents")
-    private List<SubSourceDTO> subSourceList;
+    @ApiModelProperty("Data add task information of existing agents")
+    private List<DataAddTaskDTO> dataAddTaskList;
 
 }

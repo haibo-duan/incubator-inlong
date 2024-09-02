@@ -18,10 +18,12 @@
 package org.apache.inlong.manager.web.controller;
 
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
+import org.apache.inlong.manager.common.enums.OperationTarget;
 import org.apache.inlong.manager.common.enums.OperationType;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
 import org.apache.inlong.manager.common.tool.excel.ExcelTool;
 import org.apache.inlong.manager.common.validation.UpdateValidation;
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.consume.BriefMQMessage;
@@ -31,6 +33,7 @@ import org.apache.inlong.manager.pojo.stream.InlongStreamBriefInfo;
 import org.apache.inlong.manager.pojo.stream.InlongStreamInfo;
 import org.apache.inlong.manager.pojo.stream.InlongStreamPageRequest;
 import org.apache.inlong.manager.pojo.stream.InlongStreamRequest;
+import org.apache.inlong.manager.pojo.stream.QueryMessageRequest;
 import org.apache.inlong.manager.pojo.stream.StreamField;
 import org.apache.inlong.manager.pojo.user.LoginUserUtils;
 import org.apache.inlong.manager.pojo.user.UserRoleCode;
@@ -78,10 +81,18 @@ public class InlongStreamController {
     private InlongStreamProcessService streamProcessOperation;
 
     @RequestMapping(value = "/stream/save", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.CREATE)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.STREAM)
     @ApiOperation(value = "Save inlong stream")
     public Response<Integer> save(@RequestBody InlongStreamRequest request) {
         int result = streamService.save(request, LoginUserUtils.getLoginUser().getName());
+        return Response.success(result);
+    }
+
+    @RequestMapping(value = "/stream/batchSave", method = RequestMethod.POST)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.STREAM)
+    @ApiOperation(value = "Batch save inlong stream")
+    public Response<List<BatchResult>> batchSave(@RequestBody List<InlongStreamRequest> requestList) {
+        List<BatchResult> result = streamService.batchSave(requestList, LoginUserUtils.getLoginUser().getName());
         return Response.success(result);
     }
 
@@ -102,7 +113,7 @@ public class InlongStreamController {
             @ApiImplicitParam(name = "streamId", dataTypeClass = String.class, required = true)
     })
     public Response<InlongStreamInfo> get(@RequestParam String groupId, @RequestParam String streamId) {
-        return Response.success(streamService.get(groupId, streamId, LoginUserUtils.getLoginUser()));
+        return Response.success(streamService.get(groupId, streamId));
     }
 
     @RequestMapping(value = "/stream/getBrief", method = RequestMethod.GET)
@@ -133,7 +144,7 @@ public class InlongStreamController {
     }
 
     @RequestMapping(value = "/stream/update", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.UPDATE)
+    @OperationLog(operation = OperationType.UPDATE, operationTarget = OperationTarget.STREAM)
     @ApiOperation(value = "Update inlong stream")
     public Response<Boolean> update(@Validated(UpdateValidation.class) @RequestBody InlongStreamRequest request) {
         String username = LoginUserUtils.getLoginUser().getName();
@@ -147,19 +158,20 @@ public class InlongStreamController {
             @ApiImplicitParam(name = "streamId", dataTypeClass = String.class, required = true)
     })
     public Response<Boolean> startProcess(@PathVariable String groupId, @PathVariable String streamId,
-            @RequestParam boolean sync) {
+            @RequestParam(required = false, defaultValue = "false") boolean sync) {
         String operator = LoginUserUtils.getLoginUser().getName();
         return Response.success(streamProcessOperation.startProcess(groupId, streamId, operator, sync));
     }
 
     @RequestMapping(value = "/stream/suspendProcess/{groupId}/{streamId}", method = RequestMethod.POST)
+    @OperationLog(operation = OperationType.SUSPEND, operationTarget = OperationTarget.STREAM)
     @ApiOperation(value = "Suspend inlong stream process")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "groupId", dataTypeClass = String.class, required = true),
             @ApiImplicitParam(name = "streamId", dataTypeClass = String.class, required = true)
     })
     public Response<Boolean> suspendProcess(@PathVariable String groupId, @PathVariable String streamId,
-            @RequestParam boolean sync) {
+            @RequestParam(required = false, defaultValue = "false") boolean sync) {
         String operator = LoginUserUtils.getLoginUser().getName();
         return Response.success(streamProcessOperation.suspendProcess(groupId, streamId, operator, sync));
     }
@@ -171,7 +183,7 @@ public class InlongStreamController {
             @ApiImplicitParam(name = "streamId", dataTypeClass = String.class, required = true)
     })
     public Response<Boolean> restartProcess(@PathVariable String groupId, @PathVariable String streamId,
-            @RequestParam boolean sync) {
+            @RequestParam(required = false, defaultValue = "false") boolean sync) {
         String operator = LoginUserUtils.getLoginUser().getName();
         return Response.success(streamProcessOperation.restartProcess(groupId, streamId, operator, sync));
     }
@@ -183,14 +195,14 @@ public class InlongStreamController {
             @ApiImplicitParam(name = "streamId", dataTypeClass = String.class, required = true)
     })
     public Response<Boolean> deleteProcess(@PathVariable String groupId, @PathVariable String streamId,
-            @RequestParam boolean sync) {
+            @RequestParam(required = false, defaultValue = "false") boolean sync) {
         String operator = LoginUserUtils.getLoginUser().getName();
         return Response.success(streamProcessOperation.deleteProcess(groupId, streamId, operator, sync));
     }
 
     @Deprecated
     @RequestMapping(value = "/stream/delete", method = RequestMethod.DELETE)
-    @OperationLog(operation = OperationType.DELETE)
+    @OperationLog(operation = OperationType.DELETE, operationTarget = OperationTarget.STREAM)
     @ApiOperation(value = "Delete inlong stream")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "groupId", dataTypeClass = String.class, required = true),
@@ -244,15 +256,9 @@ public class InlongStreamController {
 
     @RequestMapping(value = "/stream/listMessages", method = RequestMethod.GET)
     @ApiOperation(value = "Get inlong stream message")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "groupId", dataTypeClass = String.class, required = true),
-            @ApiImplicitParam(name = "streamId", dataTypeClass = String.class, required = true),
-            @ApiImplicitParam(name = "messageCount", dataTypeClass = String.class, required = true)
-    })
-    public Response<List<BriefMQMessage>> listMessages(@RequestParam String groupId, @RequestParam String streamId,
-            @RequestParam Integer messageCount) {
+    public Response<List<BriefMQMessage>> listMessages(QueryMessageRequest request) {
         String username = LoginUserUtils.getLoginUser().getName();
-        return Response.success(streamService.listMessages(groupId, streamId, messageCount, username));
+        return Response.success(streamService.listMessages(request, username));
     }
 
 }

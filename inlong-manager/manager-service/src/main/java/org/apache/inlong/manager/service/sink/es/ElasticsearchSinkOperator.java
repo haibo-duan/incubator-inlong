@@ -17,15 +17,20 @@
 
 package org.apache.inlong.manager.service.sink.es;
 
-import org.apache.inlong.manager.common.consts.DataNodeType;
+import org.apache.inlong.common.pojo.sort.dataflow.field.FieldConfig;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.FormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.sink.EsSinkConfig;
+import org.apache.inlong.common.pojo.sort.dataflow.sink.SinkConfig;
 import org.apache.inlong.manager.common.consts.InlongConstants;
 import org.apache.inlong.manager.common.consts.SinkType;
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
-import org.apache.inlong.manager.common.util.AESUtils;
 import org.apache.inlong.manager.common.util.CommonBeanUtils;
+import org.apache.inlong.manager.common.util.JsonUtils;
+import org.apache.inlong.manager.dao.entity.InlongStreamEntity;
 import org.apache.inlong.manager.dao.entity.StreamSinkEntity;
 import org.apache.inlong.manager.dao.entity.StreamSinkFieldEntity;
+import org.apache.inlong.manager.pojo.group.InlongGroupInfo;
 import org.apache.inlong.manager.pojo.node.DataNodeInfo;
 import org.apache.inlong.manager.pojo.sink.SinkField;
 import org.apache.inlong.manager.pojo.sink.SinkRequest;
@@ -34,6 +39,9 @@ import org.apache.inlong.manager.pojo.sink.es.ElasticsearchFieldInfo;
 import org.apache.inlong.manager.pojo.sink.es.ElasticsearchSink;
 import org.apache.inlong.manager.pojo.sink.es.ElasticsearchSinkDTO;
 import org.apache.inlong.manager.pojo.sink.es.ElasticsearchSinkRequest;
+import org.apache.inlong.manager.pojo.sort.util.FieldInfoUtils;
+import org.apache.inlong.manager.pojo.stream.InlongStreamExtParam;
+import org.apache.inlong.manager.pojo.stream.InlongStreamInfo;
 import org.apache.inlong.manager.service.sink.AbstractSinkOperator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,10 +52,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Elasticsearch sink operator, such as save or update Elasticsearch field, etc.
@@ -63,12 +71,12 @@ public class ElasticsearchSinkOperator extends AbstractSinkOperator {
 
     @Override
     public Boolean accept(String sinkType) {
-        return SinkType.ELASTICSEARCH.equals(sinkType);
+        return SinkType.ES.equals(sinkType);
     }
 
     @Override
     protected String getSinkType() {
-        return SinkType.ELASTICSEARCH;
+        return SinkType.ES;
     }
 
     @Override
@@ -81,20 +89,14 @@ public class ElasticsearchSinkOperator extends AbstractSinkOperator {
         try {
             ElasticsearchSinkDTO dto = ElasticsearchSinkDTO.getFromRequest(sinkRequest, targetEntity.getExtParams());
 
-            DataNodeInfo dataNodeInfo =
-                    dataNodeHelper.getDataNodeInfo(request.getDataNodeName(), DataNodeType.ELASTICSEARCH);
-            String esUrl = dataNodeInfo.getUrl();
-            dto.setHosts(esUrl);
+            InlongStreamEntity stream = inlongStreamEntityMapper
+                    .selectByIdentifier(request.getInlongGroupId(), request.getInlongStreamId());
+            dto.setSeparator(String.valueOf((char) (Integer.parseInt(stream.getDataSeparator()))));
 
-            dto.setUsername(dataNodeInfo.getUsername());
-            Integer encryptVersion = AESUtils.getCurrentVersion(null);
-            String passwd = null;
-            if (StringUtils.isNotEmpty(dataNodeInfo.getToken())) {
-                passwd = AESUtils.encryptToString(dataNodeInfo.getToken().getBytes(StandardCharsets.UTF_8),
-                        encryptVersion);
-            }
-            dto.setPassword(passwd);
-            dto.setEncryptVersion(encryptVersion);
+            InlongStreamExtParam streamExt =
+                    JsonUtils.parseObject(stream.getExtParams(), InlongStreamExtParam.class);
+            dto.setFieldOffset(streamExt.getExtendedFieldSize());
+
             targetEntity.setExtParams(objectMapper.writeValueAsString(dto));
         } catch (Exception e) {
             throw new BusinessException(ErrorCodeEnum.SINK_SAVE_FAILED,
@@ -118,13 +120,14 @@ public class ElasticsearchSinkOperator extends AbstractSinkOperator {
     }
 
     @Override
-    public Map<String, String> parse2IdParams(StreamSinkEntity streamSink, List<String> fields) {
-        Map<String, String> idParams = super.parse2IdParams(streamSink, fields);
+    public Map<String, String> parse2IdParams(StreamSinkEntity streamSink, List<String> fields,
+            DataNodeInfo dataNodeInfo) {
+        Map<String, String> idParams = super.parse2IdParams(streamSink, fields, dataNodeInfo);
         StringBuilder sb = new StringBuilder();
         for (String field : fields) {
             sb.append(field).append(" ");
         }
-        idParams.put(KEY_FIELDS, sb.toString());
+        idParams.computeIfAbsent(KEY_FIELDS, k -> sb.toString());
         return idParams;
     }
 
@@ -144,6 +147,7 @@ public class ElasticsearchSinkOperator extends AbstractSinkOperator {
         Integer sinkId = request.getId();
         for (SinkField fieldInfo : fieldList) {
             this.checkFieldInfo(fieldInfo);
+            fieldInfo.setExtParams(null);
             StreamSinkFieldEntity fieldEntity = CommonBeanUtils.copyProperties(fieldInfo, StreamSinkFieldEntity::new);
             if (StringUtils.isEmpty(fieldEntity.getFieldComment())) {
                 fieldEntity.setFieldComment(fieldEntity.getFieldName());
@@ -188,6 +192,29 @@ public class ElasticsearchSinkOperator extends AbstractSinkOperator {
 
         });
         return fieldList;
+    }
+
+    @Override
+    public SinkConfig getSinkConfig(InlongGroupInfo groupInfo, InlongStreamInfo streamInfo, StreamSink sink) {
+        ElasticsearchSink elasticsearchSink = (ElasticsearchSink) sink;
+        StreamSinkEntity streamSinkEntity = sinkMapper.selectByPrimaryKey(sink.getId());
+        ElasticsearchSinkDTO elasticsearchSinkDTO = ElasticsearchSinkDTO.getFromJson(streamSinkEntity.getExtParams());
+        EsSinkConfig sinkConfig = CommonBeanUtils.copyProperties(elasticsearchSink, EsSinkConfig::new);
+        CommonBeanUtils.copyProperties(elasticsearchSinkDTO, sinkConfig);
+        sinkConfig.setSeparator(String.valueOf((char) (Integer.parseInt(streamInfo.getDataSeparator()))));
+        sinkConfig.setFieldOffset(streamInfo.getExtendedFieldSize());
+        sinkConfig.setContentOffset(0);
+        List<FieldConfig> fields = sinkFieldMapper.selectBySinkId(sink.getId()).stream().map(
+                v -> {
+                    FieldConfig fieldConfig = new FieldConfig();
+                    FormatInfo formatInfo = FieldInfoUtils.convertFieldFormat(
+                            v.getFieldType().toLowerCase());
+                    fieldConfig.setName(v.getFieldName());
+                    fieldConfig.setFormatInfo(formatInfo);
+                    return fieldConfig;
+                }).collect(Collectors.toList());
+        sinkConfig.setFieldConfigs(fields);
+        return sinkConfig;
     }
 
 }

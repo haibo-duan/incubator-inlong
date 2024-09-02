@@ -86,4 +86,29 @@ public class InlongTenantClient {
         ClientUtils.assertRespSuccess(updateResult);
         return updateResult.getData();
     }
+
+    /**
+     * Delete inlong tenant by tenant name
+     *
+     * @param name tenant name
+     * @return true = delete success / false = delete fail
+     */
+    public Boolean deleteTenantByName(String name) {
+        Response<Boolean> deleteResponse = ClientUtils.executeHttpCall(inlongTenantApi.delete(name));
+        ClientUtils.assertRespSuccess(deleteResponse);
+        return deleteResponse.getData();
+    }
+
+    /**
+     * Migrate group to another tenant
+     *
+     * @param inlongGroupId inlong group id
+     * @param tenant target tenant
+     * @return true/false
+     */
+    public Boolean migrate(String inlongGroupId, String tenant) {
+        Response<Boolean> migrateResult = ClientUtils.executeHttpCall(inlongTenantApi.migrate(inlongGroupId, tenant));
+        ClientUtils.assertRespSuccess(migrateResult);
+        return migrateResult.getData();
+    }
 }

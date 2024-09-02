@@ -19,42 +19,35 @@ package org.apache.inlong.agent.core;
 
 import org.apache.inlong.agent.common.AbstractDaemon;
 import org.apache.inlong.agent.conf.AgentConfiguration;
-import org.apache.inlong.agent.conf.JobProfile;
-import org.apache.inlong.agent.core.job.Job;
-import org.apache.inlong.agent.core.job.JobManager;
-import org.apache.inlong.agent.core.job.JobWrapper;
+import org.apache.inlong.agent.constant.CommonConstants;
 import org.apache.inlong.agent.core.task.MemoryManager;
-import org.apache.inlong.agent.state.State;
 import org.apache.inlong.agent.utils.AgentUtils;
 import org.apache.inlong.agent.utils.HttpManager;
 import org.apache.inlong.agent.utils.ThreadUtils;
+import org.apache.inlong.common.constant.ProtocolType;
 import org.apache.inlong.common.enums.ComponentTypeEnum;
 import org.apache.inlong.common.enums.NodeSrvStatus;
 import org.apache.inlong.common.heartbeat.AbstractHeartbeatManager;
-import org.apache.inlong.common.heartbeat.GroupHeartbeat;
 import org.apache.inlong.common.heartbeat.HeartbeatMsg;
-import org.apache.inlong.common.heartbeat.StreamHeartbeat;
+import org.apache.inlong.sdk.dataproxy.DefaultMessageSender;
+import org.apache.inlong.sdk.dataproxy.ProxyClientConfig;
 
-import com.google.common.collect.Lists;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.concurrent.ThreadFactory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.inlong.agent.constant.AgentConstants.AGENT_CLUSTER_IN_CHARGES;
 import static org.apache.inlong.agent.constant.AgentConstants.AGENT_CLUSTER_NAME;
 import static org.apache.inlong.agent.constant.AgentConstants.AGENT_CLUSTER_TAG;
-import static org.apache.inlong.agent.constant.AgentConstants.AGENT_HTTP_PORT;
 import static org.apache.inlong.agent.constant.AgentConstants.AGENT_NODE_GROUP;
-import static org.apache.inlong.agent.constant.AgentConstants.DEFAULT_AGENT_HTTP_PORT;
+import static org.apache.inlong.agent.constant.FetcherConstants.AGENT_MANAGER_ADDR;
+import static org.apache.inlong.agent.constant.FetcherConstants.AGENT_MANAGER_AUTH_SECRET_ID;
+import static org.apache.inlong.agent.constant.FetcherConstants.AGENT_MANAGER_AUTH_SECRET_KEY;
 import static org.apache.inlong.agent.constant.FetcherConstants.AGENT_MANAGER_HEARTBEAT_HTTP_PATH;
 import static org.apache.inlong.agent.constant.FetcherConstants.DEFAULT_AGENT_MANAGER_HEARTBEAT_HTTP_PATH;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_GROUP_ID;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_STREAM_ID;
 
 /**
  * report heartbeat to inlong-manager
@@ -63,32 +56,27 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatManager.class);
     public static final int PRINT_MEMORY_PERMIT_INTERVAL_SECOND = 60;
+    public static final int HEARTBEAT_INTERVAL_SECOND = 60;
+    public static final String INLONG_AGENT_SYSTEM = "inlong_agent_system";
+
     private static HeartbeatManager heartbeatManager = null;
-    private final JobManager jobmanager;
     private final AgentConfiguration conf;
     private final HttpManager httpManager;
     private final String baseManagerUrl;
     private final String reportHeartbeatUrl;
-    private final Pattern numberPattern = Pattern.compile("^[-+]?[\\d]*$");
+    private DefaultMessageSender sender;
 
     /**
      * Init heartbeat manager.
      */
     private HeartbeatManager(AgentManager agentManager) {
         this.conf = AgentConfiguration.getAgentConf();
-        jobmanager = agentManager.getJobManager();
         httpManager = new HttpManager(conf);
-        baseManagerUrl = HttpManager.buildBaseUrl();
+        baseManagerUrl = httpManager.getBaseUrl();
         reportHeartbeatUrl = buildReportHeartbeatUrl(baseManagerUrl);
-    }
-
-    private HeartbeatManager() {
-        conf = AgentConfiguration.getAgentConf();
-        httpManager = new HttpManager(conf);
-        baseManagerUrl = HttpManager.buildBaseUrl();
-        reportHeartbeatUrl = buildReportHeartbeatUrl(baseManagerUrl);
-
-        jobmanager = null;
+        createMessageSender();
+        AgentStatusManager.getInstance(agentManager);
+        FileStaticManager.getInstance(agentManager);
     }
 
     public static HeartbeatManager getInstance(AgentManager agentManager) {
@@ -117,6 +105,7 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
 
     private Runnable printMemoryPermitThread() {
         return () -> {
+            Thread.currentThread().setName("heartBeat-printMemoryPermit");
             while (isRunnable()) {
                 MemoryManager.getInstance().printAll();
                 AgentUtils.silenceSleepInSeconds(PRINT_MEMORY_PERMIT_INTERVAL_SECOND);
@@ -126,6 +115,7 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
 
     private Runnable heartbeatReportThread() {
         return () -> {
+            Thread.currentThread().setName("heartBeat-heartbeatReportThread");
             while (isRunnable()) {
                 try {
                     HeartbeatMsg heartbeatMsg = buildHeartbeatMsg();
@@ -133,10 +123,16 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug(" {} report heartbeat to manager", heartbeatMsg);
                     }
-                    SECONDS.sleep(heartbeatInterval());
+                    if (sender == null) {
+                        createMessageSender();
+                    }
+                    AgentStatusManager.getInstance().sendStatusMsg(sender);
+                    FileStaticManager.getInstance().sendStaticMsg(sender);
                 } catch (Throwable e) {
                     LOGGER.error("interrupted while report heartbeat", e);
                     ThreadUtils.threadThrowableHandler(Thread.currentThread(), e);
+                } finally {
+                    AgentUtils.silenceSleepInSeconds(HEARTBEAT_INTERVAL_SECOND);
                 }
             }
         };
@@ -157,7 +153,6 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
      */
     private HeartbeatMsg buildHeartbeatMsg() {
         final String agentIp = AgentUtils.fetchLocalIp();
-        final int agentPort = conf.getInt(AGENT_HTTP_PORT, DEFAULT_AGENT_HTTP_PORT);
         final String clusterName = conf.get(AGENT_CLUSTER_NAME);
         final String clusterTag = conf.get(AGENT_CLUSTER_TAG);
         final String inCharges = conf.get(AGENT_CLUSTER_IN_CHARGES);
@@ -165,7 +160,6 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
 
         HeartbeatMsg heartbeatMsg = new HeartbeatMsg();
         heartbeatMsg.setIp(agentIp);
-        heartbeatMsg.setPort(String.valueOf(agentPort));
         heartbeatMsg.setComponentType(ComponentTypeEnum.Agent.getType());
         heartbeatMsg.setReportTime(System.currentTimeMillis());
         if (StringUtils.isNotBlank(clusterName)) {
@@ -181,34 +175,6 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
             heartbeatMsg.setNodeGroup(nodeGroup);
         }
 
-        Map<String, JobWrapper> jobWrapperMap = jobmanager.getJobs();
-        List<GroupHeartbeat> groupHeartbeats = Lists.newArrayList();
-        List<StreamHeartbeat> streamHeartbeats = Lists.newArrayList();
-        List<String> jobIds = Lists.newArrayList();
-        jobWrapperMap.values().forEach(jobWrapper -> {
-            Job job = jobWrapper.getJob();
-            JobProfile jobProfile = job.getJobConf();
-            jobIds.add(jobProfile.getInstanceId());
-            final String groupId = jobProfile.get(JOB_GROUP_ID);
-            final String streamId = jobProfile.get(JOB_STREAM_ID);
-            State currentState = jobWrapper.getCurrentState();
-            String status = currentState.name();
-            GroupHeartbeat groupHeartbeat = new GroupHeartbeat();
-            groupHeartbeat.setInlongGroupId(groupId);
-            groupHeartbeat.setStatus(status);
-            groupHeartbeats.add(groupHeartbeat);
-
-            StreamHeartbeat streamHeartbeat = new StreamHeartbeat();
-            streamHeartbeat.setInlongGroupId(groupId);
-            streamHeartbeat.setInlongStreamId(streamId);
-            streamHeartbeat.setStatus(status);
-            streamHeartbeats.add(streamHeartbeat);
-        });
-
-        heartbeatMsg.setGroupHeartbeats(groupHeartbeats);
-        heartbeatMsg.setStreamHeartbeats(streamHeartbeats);
-
-        LOGGER.info("heartbeat jobIds {} heartbeatMsg {}", jobIds, heartbeatMsg);
         return heartbeatMsg;
     }
 
@@ -220,7 +186,6 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
         heartbeatMsg.setNodeSrvStatus(NodeSrvStatus.SERVICE_UNINSTALL);
         heartbeatMsg.setInCharges(conf.get(AGENT_CLUSTER_IN_CHARGES));
         heartbeatMsg.setIp(AgentUtils.fetchLocalIp());
-        heartbeatMsg.setPort(String.valueOf(conf.getInt(AGENT_HTTP_PORT, DEFAULT_AGENT_HTTP_PORT)));
         heartbeatMsg.setComponentType(ComponentTypeEnum.Agent.getType());
         heartbeatMsg.setClusterName(conf.get(AGENT_CLUSTER_NAME));
         heartbeatMsg.setClusterTag(conf.get(AGENT_CLUSTER_TAG));
@@ -231,9 +196,22 @@ public class HeartbeatManager extends AbstractDaemon implements AbstractHeartbea
         return baseUrl + conf.get(AGENT_MANAGER_HEARTBEAT_HTTP_PATH, DEFAULT_AGENT_MANAGER_HEARTBEAT_HTTP_PATH);
     }
 
-    public static void main(String[] args) throws Exception {
-        HeartbeatManager heartbeatManager = new HeartbeatManager();
-        heartbeatManager.reportHeartbeat(heartbeatManager.buildDeadHeartbeatMsg());
-        System.out.println("Success send dead heartbeat message to manager.");
+    private void createMessageSender() {
+        String managerAddr = conf.get(AGENT_MANAGER_ADDR);
+        String authSecretId = conf.get(AGENT_MANAGER_AUTH_SECRET_ID);
+        String authSecretKey = conf.get(AGENT_MANAGER_AUTH_SECRET_KEY);
+        ProxyClientConfig proxyClientConfig = null;
+        try {
+            proxyClientConfig = new ProxyClientConfig(managerAddr, INLONG_AGENT_SYSTEM, authSecretId, authSecretKey);
+            proxyClientConfig.setTotalAsyncCallbackSize(CommonConstants.DEFAULT_PROXY_TOTAL_ASYNC_PROXY_SIZE);
+            proxyClientConfig.setAliveConnections(CommonConstants.DEFAULT_PROXY_ALIVE_CONNECTION_NUM);
+            proxyClientConfig.setIoThreadNum(CommonConstants.DEFAULT_PROXY_CLIENT_IO_THREAD_NUM);
+            proxyClientConfig.setProtocolType(ProtocolType.TCP);
+            ThreadFactory SHARED_FACTORY = new DefaultThreadFactory("agent-sender-manager-heartbeat",
+                    Thread.currentThread().isDaemon());
+            sender = new DefaultMessageSender(proxyClientConfig, SHARED_FACTORY);
+        } catch (Exception e) {
+            LOGGER.error("heartbeat manager create sdk failed: ", e);
+        }
     }
 }

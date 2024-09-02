@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache.inlong</groupId>
         <artifactId>inlong</artifactId>
-        <version>1.10.0-SNAPSHOT</version>
+        <version>1.14.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>inlong-distribution</artifactId>
@@ -36,46 +36,15 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <finalName>apache-${project.parent.artifactId}-${project.version}</finalName>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>release</id>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assemblies/release.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>sort-plugin</id>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assemblies/sort-connectors-v1.13.xml</descriptor>
-                                <descriptor>src/main/assemblies/sort-connectors-v1.15.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>${exec.maven.version}</version>
                 <configuration>
-                    <executable>${basedir}/script/backup_module_dependencys.sh</executable>
+                    <executable>bash</executable>
+                    <arguments>
+                        <argument>+x</argument>
+                        <argument>${basedir}/script/backup_module_dependencies.sh</argument>
+                    </arguments>
                 </configuration>
                 <executions>
                     <execution>
@@ -83,10 +52,182 @@
                         <goals>
                             <goal>exec</goal>
                         </goals>
-                        <phase>install</phase>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>flink-all-version</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <configuration>
+                            <finalName>apache-${project.parent.artifactId}-${project.version}</finalName>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>release</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/release.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>sort-plugin</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/sort-connectors-v1.13.xml</descriptor>
+                                        <descriptor>src/main/assemblies/sort-connectors-v1.15.xml</descriptor>
+                                        <descriptor>src/main/assemblies/sort-connectors-v1.18.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>v1.13</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <configuration>
+                            <finalName>apache-${project.parent.artifactId}-${project.version}</finalName>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>release</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/release.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>sort-plugin</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/sort-connectors-v1.13.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>v1.15</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <configuration>
+                            <finalName>apache-${project.parent.artifactId}-${project.version}</finalName>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>release</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/release.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>sort-plugin</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/sort-connectors-v1.15.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>v1.18</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <configuration>
+                            <finalName>apache-${project.parent.artifactId}-${project.version}</finalName>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>release</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/release.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>sort-plugin</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assemblies/sort-connectors-v1.18.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

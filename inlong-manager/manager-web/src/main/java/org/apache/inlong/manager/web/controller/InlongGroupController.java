@@ -17,10 +17,12 @@
 
 package org.apache.inlong.manager.web.controller;
 
+import org.apache.inlong.manager.common.enums.OperationTarget;
 import org.apache.inlong.manager.common.enums.OperationType;
 import org.apache.inlong.manager.common.enums.TenantUserTypeEnum;
 import org.apache.inlong.manager.common.validation.SaveValidation;
 import org.apache.inlong.manager.common.validation.UpdateValidation;
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.group.InlongGroupBriefInfo;
@@ -31,6 +33,7 @@ import org.apache.inlong.manager.pojo.group.InlongGroupRequest;
 import org.apache.inlong.manager.pojo.group.InlongGroupResetRequest;
 import org.apache.inlong.manager.pojo.group.InlongGroupTopicInfo;
 import org.apache.inlong.manager.pojo.group.InlongGroupTopicRequest;
+import org.apache.inlong.manager.pojo.schedule.OfflineJobRequest;
 import org.apache.inlong.manager.pojo.user.LoginUserUtils;
 import org.apache.inlong.manager.pojo.workflow.WorkflowResult;
 import org.apache.inlong.manager.service.group.InlongGroupProcessService;
@@ -39,6 +42,7 @@ import org.apache.inlong.manager.service.operationlog.OperationLog;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -68,11 +72,20 @@ public class InlongGroupController {
     private InlongGroupProcessService groupProcessOperation;
 
     @RequestMapping(value = "/group/save", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.CREATE)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.GROUP)
     @ApiOperation(value = "Save inlong group")
     public Response<String> save(@Validated(SaveValidation.class) @RequestBody InlongGroupRequest groupRequest) {
         String operator = LoginUserUtils.getLoginUser().getName();
         return Response.success(groupService.save(groupRequest, operator));
+    }
+
+    @RequestMapping(value = "/group/batchSave", method = RequestMethod.POST)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.GROUP)
+    @ApiOperation(value = "Batch Save inlong group")
+    public Response<List<BatchResult>> batchSave(
+            @Validated(SaveValidation.class) @RequestBody List<InlongGroupRequest> groupRequestList) {
+        String operator = LoginUserUtils.getLoginUser().getName();
+        return Response.success(groupService.batchSave(groupRequestList, operator));
     }
 
     @RequestMapping(value = "/group/exist/{groupId}", method = RequestMethod.GET)
@@ -87,6 +100,13 @@ public class InlongGroupController {
     @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class, required = true)
     public Response<InlongGroupInfo> get(@PathVariable String groupId) {
         return Response.success(groupService.get(groupId));
+    }
+
+    @RequestMapping(value = "/group/getTenant/{groupId}", method = RequestMethod.GET)
+    @ApiOperation(value = "Get inlong group tenant")
+    @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class, required = true)
+    public Response<String> getTenant(@PathVariable String groupId) {
+        return Response.success(groupService.getTenant(groupId, LoginUserUtils.getLoginUser().getName()));
     }
 
     @RequestMapping(value = "/group/countByStatus", method = RequestMethod.GET)
@@ -126,7 +146,7 @@ public class InlongGroupController {
     }
 
     @RequestMapping(value = "/group/update", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.UPDATE)
+    @OperationLog(operation = OperationType.UPDATE, operationTarget = OperationTarget.GROUP)
     @ApiOperation(value = "Update inlong group")
     public Response<String> update(@Validated(UpdateValidation.class) @RequestBody InlongGroupRequest groupRequest) {
         String operator = LoginUserUtils.getLoginUser().getName();
@@ -135,7 +155,7 @@ public class InlongGroupController {
 
     @RequestMapping(value = "/group/delete/{groupId}", method = RequestMethod.DELETE)
     @ApiOperation(value = "Delete inlong group info")
-    @OperationLog(operation = OperationType.DELETE)
+    @OperationLog(operation = OperationType.DELETE, operationTarget = OperationTarget.GROUP)
     @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class, required = true)
     public Response<Boolean> delete(@PathVariable String groupId) {
         String operator = LoginUserUtils.getLoginUser().getName();
@@ -144,7 +164,7 @@ public class InlongGroupController {
 
     @RequestMapping(value = "/group/deleteAsync/{groupId}", method = RequestMethod.DELETE)
     @ApiOperation(value = "Delete inlong group info")
-    @OperationLog(operation = OperationType.DELETE)
+    @OperationLog(operation = OperationType.DELETE, operationTarget = OperationTarget.GROUP)
     @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class, required = true)
     public Response<String> deleteAsync(@PathVariable String groupId) {
         String operator = LoginUserUtils.getLoginUser().getName();
@@ -153,14 +173,24 @@ public class InlongGroupController {
 
     @RequestMapping(value = "/group/startProcess/{groupId}", method = RequestMethod.POST)
     @ApiOperation(value = "Start inlong approval process")
+    @OperationLog(operation = OperationType.START, operationTarget = OperationTarget.GROUP)
     @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class)
     public Response<WorkflowResult> startProcess(@PathVariable String groupId) {
         String operator = LoginUserUtils.getLoginUser().getName();
         return Response.success(groupProcessOperation.startProcess(groupId, operator));
     }
 
+    @RequestMapping(value = "/group/batchStartProcess", method = RequestMethod.POST)
+    @ApiOperation(value = "Batch start inlong approval process")
+    @OperationLog(operation = OperationType.START, operationTarget = OperationTarget.GROUP)
+    public Response<WorkflowResult> batchStartProcess(@RequestBody List<String> groupIdList) {
+        String operator = LoginUserUtils.getLoginUser().getName();
+        return Response.success(groupProcessOperation.batchStartProcess(groupIdList, operator));
+    }
+
     @RequestMapping(value = "/group/suspendProcess/{groupId}", method = RequestMethod.POST)
     @ApiOperation(value = "Suspend inlong group process")
+    @OperationLog(operation = OperationType.SUSPEND, operationTarget = OperationTarget.GROUP)
     @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class)
     public Response<WorkflowResult> suspendProcess(@PathVariable String groupId) {
         String operator = LoginUserUtils.getLoginUser().getName();
@@ -176,6 +206,7 @@ public class InlongGroupController {
     }
 
     @RequestMapping(value = "/group/suspendProcessAsync/{groupId}", method = RequestMethod.POST)
+    @OperationLog(operation = OperationType.SUSPEND, operationTarget = OperationTarget.GROUP)
     @ApiOperation(value = "Suspend inlong group process")
     @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class)
     public Response<String> suspendProcessAsync(@PathVariable String groupId) {
@@ -205,4 +236,26 @@ public class InlongGroupController {
         return Response.success(groupService.detail(groupId));
     }
 
+    @RequestMapping(value = "/group/switch/start/{groupId}/{clusterTag}", method = RequestMethod.GET)
+    @ApiOperation(value = "start tag switch")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class, required = true),
+            @ApiImplicitParam(name = "clusterTag", value = "cluster tag", dataTypeClass = String.class, required = true)
+    })
+    public Response<Boolean> startTagSwitch(@PathVariable String groupId, @PathVariable String clusterTag) {
+        return Response.success(groupService.startTagSwitch(groupId, clusterTag));
+    }
+
+    @RequestMapping(value = "/group/switch/finish/{groupId}", method = RequestMethod.GET)
+    @ApiOperation(value = "finish tag switch")
+    @ApiImplicitParam(name = "groupId", value = "Inlong group id", dataTypeClass = String.class, required = true)
+    public Response<Boolean> finishTagSwitch(@PathVariable String groupId) {
+        return Response.success(groupService.finishTagSwitch(groupId));
+    }
+
+    @RequestMapping(value = "/group/submitOfflineJob", method = RequestMethod.POST)
+    @ApiOperation(value = "Submitting inlong offline job process")
+    public Response<Boolean> submitOfflineJob(@RequestBody OfflineJobRequest request) {
+        return Response.success(groupService.submitOfflineJob(request));
+    }
 }

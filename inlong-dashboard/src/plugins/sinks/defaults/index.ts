@@ -43,7 +43,7 @@ export const allDefaultSinks: MetaExportWithBackendList<SinkMetaType> = [
   },
   {
     label: 'Elasticsearch',
-    value: 'ELASTICSEARCH',
+    value: 'ES',
     LoadEntity: () => import('./Elasticsearch'),
   },
   {
@@ -80,6 +80,11 @@ export const allDefaultSinks: MetaExportWithBackendList<SinkMetaType> = [
     label: 'MySQL',
     value: 'MYSQL',
     LoadEntity: () => import('./MySQL'),
+  },
+  {
+    label: 'OceanBase',
+    value: 'OCEANBASE',
+    LoadEntity: () => import('./OceanBase'),
   },
   {
     label: 'Oracle',

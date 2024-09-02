@@ -43,7 +43,25 @@ import java.io.Serializable;
 public class InlongStreamExtParam implements Serializable {
 
     @ApiModelProperty(value = "Whether to ignore the parse errors of field value")
-    private boolean ignoreParseError;
+    private Boolean ignoreParseError;
+
+    @ApiModelProperty(value = "Kv separator")
+    private String kvSeparator;
+
+    @ApiModelProperty(value = "Line separator")
+    private String lineSeparator;
+
+    @ApiModelProperty(value = "If use extended fields")
+    private Boolean useExtendedFields = false;
+
+    @ApiModelProperty(value = "Predefined fields")
+    private String predefinedFields;
+
+    @ApiModelProperty("The multiple enable of sink")
+    private Boolean sinkMultipleEnable = false;
+
+    @ApiModelProperty(value = "Extended field size")
+    private Integer extendedFieldSize = 0;
 
     /**
      * Pack extended attributes into ExtParams

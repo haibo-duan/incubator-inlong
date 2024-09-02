@@ -24,6 +24,7 @@ import { useRequest } from '@/ui/hooks';
 import { useTranslation } from 'react-i18next';
 import { CommonInterface } from '../common';
 import { clusters } from '@/plugins/clusters';
+import HighTable from '@/ui/components/HighTable';
 
 type Props = CommonInterface;
 
@@ -36,6 +37,13 @@ const Comp = ({ inlongGroupId, isCreate }: Props, ref) => {
     return !!inlongGroupId;
   }, [inlongGroupId]);
 
+  const [sortOption, setSortOption] = useState({
+    inlongGroupId: inlongGroupId,
+    inlongStreamId: '',
+    pageSize: 5,
+    pageNum: 1,
+  });
+
   const { data, run: getData } = useRequest(`/group/detail/${inlongGroupId}`, {
     ready: isUpdate,
     refreshDeps: [inlongGroupId],
@@ -43,6 +51,20 @@ const Comp = ({ inlongGroupId, isCreate }: Props, ref) => {
       ...data,
     }),
   });
+
+  const { data: sortData, run: getSortData } = useRequest(
+    {
+      url: '/sink/listDetail',
+      method: 'post',
+      data: sortOption,
+    },
+    {
+      refreshDeps: [sortOption],
+      formatResult: data => ({
+        ...data,
+      }),
+    },
+  );
 
   useEffect(() => {
     getData();
@@ -79,19 +101,60 @@ const Comp = ({ inlongGroupId, isCreate }: Props, ref) => {
   const dividerInfo = data => {
     let info = [];
     for (const item in data) {
-      if (data[item] !== null && item !== 'SortInfo' && item !== 'PULSAR' && item !== 'TUBEMQ') {
+      if (
+        data[item] !== null &&
+        item !== 'PULSAR' &&
+        item !== 'TUBEMQ' &&
+        item !== 'inlongClusterTag'
+      ) {
         info.push(item);
       }
     }
     return info;
   };
+  const onChange = ({ current: pageNum, pageSize }) => {
+    setSortOption(pre => ({ ...pre, pageNum: pageNum, pageSize: pageSize }));
+  };
+
+  const pagination = {
+    pageSize: 5,
+    current: sortOption.pageNum,
+    total: sortData?.total,
+  };
+
+  const onFilter = allValues => {
+    setSortOption(pre => ({
+      ...pre,
+      inlongStreamId: allValues.streamId,
+    }));
+  };
+
+  const content = () => [
+    {
+      type: 'inputsearch',
+      label: 'Stream Id',
+      name: 'streamId',
+      props: {
+        allowClear: true,
+      },
+    },
+  ];
 
   return (
     <div style={{ position: 'relative' }}>
+      {data?.hasOwnProperty('inlongClusterTag') && (
+        <>
+          <Divider orientation="left">Cluster tag {t('pages.GroupDetail.Resource.Info')}</Divider>
+          <div>
+            <span>Cluster tag:</span>
+            <span style={{ marginLeft: 100 }}>{data?.inlongClusterTag}</span>
+          </div>
+        </>
+      )}
       {dividerInfo(data).map(item => {
         return (
           <>
-            <Divider orientation="left">
+            <Divider orientation="left" style={{ marginTop: 40 }}>
               {clusters.find(c => c.value === item)?.label || item}{' '}
               {t('pages.GroupDetail.Resource.Info')}
             </Divider>
@@ -142,26 +205,30 @@ const Comp = ({ inlongGroupId, isCreate }: Props, ref) => {
           ></Table>
         </>
       )}
-      {data?.hasOwnProperty('SortInfo') && (
-        <>
-          <Divider orientation="left" style={{ marginTop: 60 }}>
-            Sort {t('pages.GroupDetail.Resource.Info')}
-          </Divider>
-          <Table
-            size="small"
-            columns={[
+      <>
+        <Divider orientation="left" style={{ marginTop: 60 }}>
+          Sort {t('pages.GroupDetail.Resource.Info')}
+        </Divider>
+        <HighTable
+          filterForm={{
+            content: content(),
+            onFilter,
+          }}
+          table={{
+            columns: [
               { title: 'inlongStreamId', dataIndex: 'inlongStreamId' },
               { title: 'dataflowId', dataIndex: 'id' },
               { title: 'sinkName', dataIndex: 'sinkName' },
               { title: 'topoName', dataIndex: 'inlongClusterName' },
-            ]}
-            style={{ marginTop: 20 }}
-            dataSource={data?.SortInfo}
-            pagination={false}
-            rowKey="name"
-          ></Table>
-        </>
-      )}
+            ],
+            style: { marginTop: 20 },
+            dataSource: sortData?.list,
+            pagination,
+            rowKey: 'name',
+            onChange,
+          }}
+        />
+      </>
     </div>
   );
 };

@@ -21,7 +21,9 @@ import org.apache.inlong.manager.client.api.ClientConfiguration;
 import org.apache.inlong.manager.client.api.service.InlongStreamApi;
 import org.apache.inlong.manager.client.api.util.ClientUtils;
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
+import org.apache.inlong.manager.common.util.JsonUtils;
 import org.apache.inlong.manager.common.util.Preconditions;
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.consume.BriefMQMessage;
@@ -29,11 +31,15 @@ import org.apache.inlong.manager.pojo.sink.ParseFieldRequest;
 import org.apache.inlong.manager.pojo.stream.InlongStreamBriefInfo;
 import org.apache.inlong.manager.pojo.stream.InlongStreamInfo;
 import org.apache.inlong.manager.pojo.stream.InlongStreamPageRequest;
+import org.apache.inlong.manager.pojo.stream.QueryMessageRequest;
 import org.apache.inlong.manager.pojo.stream.StreamField;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.inlong.manager.common.consts.InlongConstants.STATEMENT_TYPE_JSON;
 import static org.apache.inlong.manager.common.consts.InlongConstants.STATEMENT_TYPE_SQL;
@@ -54,6 +60,16 @@ public class InlongStreamClient {
      */
     public Integer createStreamInfo(InlongStreamInfo streamInfo) {
         Response<Integer> response = ClientUtils.executeHttpCall(inlongStreamApi.createStream(streamInfo));
+        ClientUtils.assertRespSuccess(response);
+        return response.getData();
+    }
+
+    /**
+     * Batch create inlong stream.
+     */
+    public List<BatchResult> batchCreateStreamInfo(List<InlongStreamInfo> streamInfos) {
+        Response<List<BatchResult>> response =
+                ClientUtils.executeHttpCall(inlongStreamApi.batchCreateStream(streamInfos));
         ClientUtils.assertRespSuccess(response);
         return response.getData();
     }
@@ -102,9 +118,24 @@ public class InlongStreamClient {
         }
         if (response.getErrMsg().contains("not exist")) {
             return null;
-        } else {
-            throw new RuntimeException(response.getErrMsg());
         }
+        throw new RuntimeException(response.getErrMsg());
+    }
+
+    /**
+     * Get inlong stream brief info by the given groupId and streamId.
+     */
+    public InlongStreamBriefInfo getStreamBriefInfo(String groupId, String streamId) {
+        Response<InlongStreamBriefInfo> response =
+                ClientUtils.executeHttpCall(inlongStreamApi.getStreamBriefInfo(groupId, streamId));
+
+        if (response.isSuccess()) {
+            return response.getData();
+        }
+        if (response.getErrMsg().contains("not exist")) {
+            return null;
+        }
+        throw new RuntimeException(response.getErrMsg());
     }
 
     /**
@@ -164,12 +195,13 @@ public class InlongStreamClient {
      *
      * @param groupId inlong group id
      * @param streamId inlong stream id
+     * @param sync Create stream in synchronous/asynchronous way.
      * @return whether succeed
      */
-    public boolean startProcess(String groupId, String streamId) {
+    public boolean startProcess(String groupId, String streamId, boolean sync) {
         Preconditions.expectNotBlank(groupId, ErrorCodeEnum.GROUP_ID_IS_EMPTY);
         Preconditions.expectNotBlank(streamId, ErrorCodeEnum.STREAM_ID_IS_EMPTY);
-        Response<Boolean> response = ClientUtils.executeHttpCall(inlongStreamApi.startProcess(groupId, streamId));
+        Response<Boolean> response = ClientUtils.executeHttpCall(inlongStreamApi.startProcess(groupId, streamId, sync));
         ClientUtils.assertRespSuccess(response);
         return response.getData();
     }
@@ -179,12 +211,14 @@ public class InlongStreamClient {
      *
      * @param groupId inlong group id
      * @param streamId inlong stream id
+     * @param sync Suspend stream in synchronous/asynchronous way.
      * @return whether succeed
      */
-    public boolean suspendProcess(String groupId, String streamId) {
+    public boolean suspendProcess(String groupId, String streamId, boolean sync) {
         Preconditions.expectNotBlank(groupId, ErrorCodeEnum.GROUP_ID_IS_EMPTY);
         Preconditions.expectNotBlank(streamId, ErrorCodeEnum.STREAM_ID_IS_EMPTY);
-        Response<Boolean> response = ClientUtils.executeHttpCall(inlongStreamApi.suspendProcess(groupId, streamId));
+        Response<Boolean> response =
+                ClientUtils.executeHttpCall(inlongStreamApi.suspendProcess(groupId, streamId, sync));
         ClientUtils.assertRespSuccess(response);
         return response.getData();
     }
@@ -194,12 +228,14 @@ public class InlongStreamClient {
      *
      * @param groupId inlong group id
      * @param streamId inlong stream id
+     * @param sync Restart stream in synchronous/asynchronous way.
      * @return whether succeed
      */
-    public boolean restartProcess(String groupId, String streamId) {
+    public boolean restartProcess(String groupId, String streamId, boolean sync) {
         Preconditions.expectNotBlank(groupId, ErrorCodeEnum.GROUP_ID_IS_EMPTY);
         Preconditions.expectNotBlank(streamId, ErrorCodeEnum.STREAM_ID_IS_EMPTY);
-        Response<Boolean> response = ClientUtils.executeHttpCall(inlongStreamApi.restartProcess(groupId, streamId));
+        Response<Boolean> response =
+                ClientUtils.executeHttpCall(inlongStreamApi.restartProcess(groupId, streamId, sync));
         ClientUtils.assertRespSuccess(response);
         return response.getData();
     }
@@ -209,12 +245,14 @@ public class InlongStreamClient {
      *
      * @param groupId inlong group id
      * @param streamId inlong stream id
+     * @param sync Delete stream in synchronous/asynchronous way.
      * @return whether succeed
      */
-    public boolean deleteProcess(String groupId, String streamId) {
+    public boolean deleteProcess(String groupId, String streamId, boolean sync) {
         Preconditions.expectNotBlank(groupId, ErrorCodeEnum.GROUP_ID_IS_EMPTY);
         Preconditions.expectNotBlank(streamId, ErrorCodeEnum.STREAM_ID_IS_EMPTY);
-        Response<Boolean> response = ClientUtils.executeHttpCall(inlongStreamApi.deleteProcess(groupId, streamId));
+        Response<Boolean> response =
+                ClientUtils.executeHttpCall(inlongStreamApi.deleteProcess(groupId, streamId, sync));
         ClientUtils.assertRespSuccess(response);
         return response.getData();
     }
@@ -262,11 +300,15 @@ public class InlongStreamClient {
         return parseFields(request);
     }
 
-    public List<BriefMQMessage> queryMessage(String groupId, String streamId, Integer messageCount) {
-        Preconditions.expectNotBlank(groupId, ErrorCodeEnum.GROUP_ID_IS_EMPTY);
-        Preconditions.expectNotBlank(streamId, ErrorCodeEnum.STREAM_ID_IS_EMPTY);
+    public List<BriefMQMessage> queryMessage(QueryMessageRequest request) {
+        Preconditions.expectNotBlank(request.getGroupId(), ErrorCodeEnum.GROUP_ID_IS_EMPTY);
+        Preconditions.expectNotBlank(request.getStreamId(), ErrorCodeEnum.STREAM_ID_IS_EMPTY);
+        Map<String, Object> requestMap = JsonUtils.parseObject(request,
+                new TypeReference<Map<String, Object>>() {
+                });
+        requestMap.entrySet().removeIf(entry -> Objects.isNull(entry.getValue()));
         Response<List<BriefMQMessage>> response = ClientUtils.executeHttpCall(
-                inlongStreamApi.listMessages(groupId, streamId, messageCount));
+                inlongStreamApi.listMessages(requestMap));
         ClientUtils.assertRespSuccess(response);
         return response.getData();
     }

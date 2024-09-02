@@ -18,12 +18,12 @@
 package org.apache.inlong.dataproxy.sink.mq;
 
 import org.apache.inlong.common.enums.DataProxyErrCode;
+import org.apache.inlong.common.enums.InlongCompressType;
 import org.apache.inlong.dataproxy.config.CommonConfigHolder;
 import org.apache.inlong.dataproxy.consts.StatConstants;
 import org.apache.inlong.dataproxy.metrics.DataProxyMetricItem;
 import org.apache.inlong.dataproxy.metrics.audit.AuditUtils;
 import org.apache.inlong.dataproxy.sink.common.SinkContext;
-import org.apache.inlong.sdk.commons.protocol.ProxySdk.INLONG_COMPRESSED_TYPE;
 
 import org.apache.commons.lang.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +49,7 @@ public class MessageQueueZoneSinkContext extends SinkContext {
     private final String nodeId;
     private final Context producerContext;
     //
-    private final INLONG_COMPRESSED_TYPE compressType;
+    private final InlongCompressType compressType;
 
     /**
      * Constructor
@@ -62,8 +62,7 @@ public class MessageQueueZoneSinkContext extends SinkContext {
         // nodeId
         this.nodeId = CommonConfigHolder.getInstance().getProxyNodeId();
         // compressionType
-        String strCompressionType = CommonConfigHolder.getInstance().getMsgCompressType();
-        this.compressType = INLONG_COMPRESSED_TYPE.valueOf(strCompressionType);
+        this.compressType = CommonConfigHolder.getInstance().getDefV1MsgCompressType();
         // producerContext
         Map<String, String> producerParams = context.getSubProperties(PREFIX_PRODUCER);
         this.producerContext = new Context(producerParams);
@@ -115,7 +114,7 @@ public class MessageQueueZoneSinkContext extends SinkContext {
      * 
      * @return the compressType
      */
-    public INLONG_COMPRESSED_TYPE getCompressType() {
+    public InlongCompressType getCompressType() {
         return compressType;
     }
 
@@ -135,8 +134,7 @@ public class MessageQueueZoneSinkContext extends SinkContext {
             long sendTime) {
         if (currentRecord instanceof SimplePackProfile) {
             if (result) {
-                AuditUtils.add(AuditUtils.AUDIT_ID_DATAPROXY_SEND_SUCCESS,
-                        ((SimplePackProfile) currentRecord).getEvent());
+                AuditUtils.addOutputSuccess(((SimplePackProfile) currentRecord).getEvent());
             }
             return;
         }
@@ -167,7 +165,7 @@ public class MessageQueueZoneSinkContext extends SinkContext {
                     metricItem.nodeDuration.addAndGet(nodeDuration);
                     metricItem.wholeDuration.addAndGet(wholeDuration);
                 }
-                AuditUtils.add(AuditUtils.AUDIT_ID_DATAPROXY_SEND_SUCCESS, event);
+                AuditUtils.addOutputSuccess(event);
             } else {
                 metricItem.sendFailCount.addAndGet(1);
                 metricItem.sendFailSize.addAndGet(event.getBody().length);

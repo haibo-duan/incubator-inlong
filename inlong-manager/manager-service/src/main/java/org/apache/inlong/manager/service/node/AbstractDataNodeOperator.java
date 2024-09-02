@@ -17,6 +17,7 @@
 
 package org.apache.inlong.manager.service.node;
 
+import org.apache.inlong.common.pojo.sort.node.NodeConfig;
 import org.apache.inlong.manager.common.consts.InlongConstants;
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.enums.SourceStatus;
@@ -97,7 +98,15 @@ public abstract class AbstractDataNodeOperator implements DataNodeOperator {
 
     @Override
     public Map<String, String> parse2SinkParams(DataNodeInfo info) {
-        return JsonUtils.parseObject(info.getExtParams(), HashMap.class);
+        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> streamInfoMap = JsonUtils.parseObject(info.getExtParams(), HashMap.class);
+        if (streamInfoMap == null) {
+            return params;
+        }
+        for (String key : streamInfoMap.keySet()) {
+            params.put(key, String.valueOf(streamInfoMap.get(key)));
+        }
+        return params;
     }
 
     @Override
@@ -107,7 +116,7 @@ public abstract class AbstractDataNodeOperator implements DataNodeOperator {
     }
 
     @Override
-    public void updateRelatedStreamSource(DataNodeRequest request, DataNodeEntity oldEntity, String operator) {
+    public void updateRelatedStreamSource(DataNodeRequest request, DataNodeEntity dataNodeEntity, String operator) {
         LOGGER.info("do nothing for the data node type ={}", request.getType());
     }
 
@@ -128,5 +137,10 @@ public abstract class AbstractDataNodeOperator implements DataNodeOperator {
             LOGGER.error("failed to update stream source status by dataNodeName={}, status={}, by operator={}",
                     dataNodeName, status, operator, e);
         }
+    }
+
+    @Override
+    public NodeConfig getNodeConfig(DataNodeEntity dataNodeEntity) {
+        return null;
     }
 }

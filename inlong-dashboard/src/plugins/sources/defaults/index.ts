@@ -40,9 +40,20 @@ export const allDefaultSources: MetaExportWithBackendList<SourceMetaType> = [
     LoadEntity: () => import('./File'),
   },
   {
+    label: 'Kafka',
+    value: 'KAFKA',
+    useSync: false,
+    LoadEntity: () => import('./Kafka'),
+  },
+  {
     label: 'MySQL',
     value: 'MYSQL_BINLOG',
     LoadEntity: () => import('./MySQLBinlog'),
+  },
+  {
+    label: 'OceanBase',
+    value: 'OCEANBASE',
+    LoadEntity: () => import('./OceanBaseBinlog'),
   },
   {
     label: 'MongoDB',
@@ -63,6 +74,11 @@ export const allDefaultSources: MetaExportWithBackendList<SourceMetaType> = [
     label: 'PostgreSQL',
     value: 'POSTGRESQL',
     LoadEntity: () => import('./PostgreSQL'),
+  },
+  {
+    label: 'Pulsar',
+    value: 'PULSAR',
+    LoadEntity: () => import('./Pulsar'),
   },
   {
     label: 'Redis',

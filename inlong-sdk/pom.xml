@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.inlong</groupId>
         <artifactId>inlong</artifactId>
-        <version>1.10.0-SNAPSHOT</version>
+        <version>1.14.0-SNAPSHOT</version>
     </parent>
     <artifactId>inlong-sdk</artifactId>
     <packaging>pom</packaging>
@@ -33,6 +33,7 @@
         <module>sdk-common</module>
         <module>sort-sdk</module>
         <module>dataproxy-sdk</module>
+        <module>transform-sdk</module>
     </modules>
 
     <properties>

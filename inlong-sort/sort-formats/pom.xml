@@ -23,28 +23,20 @@
     <parent>
         <groupId>org.apache.inlong</groupId>
         <artifactId>inlong-sort</artifactId>
-        <version>1.10.0-SNAPSHOT</version>
+        <version>1.14.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>sort-formats</artifactId>
     <packaging>pom</packaging>
     <name>Apache InLong - Sort Formats</name>
 
-    <modules>
-        <module>format-common</module>
-        <module>format-base</module>
-        <module>format-csv</module>
-        <module>format-kv</module>
-        <module>format-inlongmsg-base</module>
-        <module>format-inlongmsg-csv</module>
-        <module>format-inlongmsg-pb</module>
-    </modules>
-
     <properties>
         <inlong.root.dir>${project.parent.parent.basedir}</inlong.root.dir>
         <flink.forkCount>1C</flink.forkCount>
         <flink.reuseForks>true</flink.reuseForks>
         <log4j.configurationfile>log4j2-test.properties</log4j.configurationfile>
+        <os.plugin.version>1.7.1</os.plugin.version>
+        <protobuf.plugin.version>0.6.1</protobuf.plugin.version>
     </properties>
 
     <!-- override these root dependencies as 'provided', so they don't end up
@@ -102,21 +94,6 @@
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
             <type>jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <!--flink dependency-->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-common</artifactId>
-            <version>${flink.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-common</artifactId>
-            <version>${flink.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
@@ -213,18 +190,84 @@
     <profiles>
         <profile>
             <id>v1.13</id>
+            <modules>
+                <module>format-common</module>
+                <module>format-row</module>
+                <module>format-rowdata</module>
+            </modules>
+            <dependencies>
+
+                <!--flink dependency-->
+                <dependency>
+                    <groupId>org.apache.flink</groupId>
+                    <artifactId>flink-table-common</artifactId>
+                    <version>${flink.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.flink</groupId>
+                    <artifactId>flink-table-common</artifactId>
+                    <version>${flink.version}</version>
+                    <type>test-jar</type>
+                    <scope>test</scope>
+                </dependency>
+
+            </dependencies>
+        </profile>
+        <profile>
+            <id>v1.15</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <modules>
-                <module>format-json-v1.13</module>
+                <module>format-common</module>
+                <module>format-row</module>
+                <module>format-rowdata</module>
             </modules>
+            <dependencies>
+
+                <!--flink dependency-->
+                <dependency>
+                    <groupId>org.apache.flink</groupId>
+                    <artifactId>flink-table-common</artifactId>
+                    <version>${flink.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.flink</groupId>
+                    <artifactId>flink-table-common</artifactId>
+                    <version>${flink.version}</version>
+                    <type>test-jar</type>
+                    <scope>test</scope>
+                </dependency>
+
+            </dependencies>
         </profile>
         <profile>
-            <id>v1.15</id>
+            <id>v1.18</id>
             <modules>
-                <module>format-json-v1.15</module>
+                <module>format-common</module>
+                <module>format-row</module>
+                <module>format-rowdata</module>
             </modules>
+            <dependencies>
+                <!--flink dependency-->
+                <dependency>
+                    <groupId>org.apache.flink</groupId>
+                    <artifactId>flink-table-common</artifactId>
+                    <version>${flink.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.flink</groupId>
+                    <artifactId>flink-table-common</artifactId>
+                    <version>${flink.version}</version>
+                    <type>test-jar</type>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 

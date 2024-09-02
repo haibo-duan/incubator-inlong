@@ -17,6 +17,7 @@
 
 package org.apache.inlong.manager.client.api.service;
 
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.consume.BriefMQMessage;
@@ -33,13 +34,18 @@ import retrofit2.http.GET;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+import retrofit2.http.QueryMap;
 
 import java.util.List;
+import java.util.Map;
 
 public interface InlongStreamApi {
 
     @POST("stream/save")
     Call<Response<Integer>> createStream(@Body InlongStreamInfo stream);
+
+    @POST("stream/batchSave")
+    Call<Response<List<BatchResult>>> batchCreateStream(@Body List<InlongStreamInfo> streamInfos);
 
     @GET("stream/exist/{groupId}/{streamId}")
     Call<Response<Boolean>> isStreamExists(@Path("groupId") String groupId, @Path("streamId") String streamId);
@@ -51,6 +57,10 @@ public interface InlongStreamApi {
     Call<Response<InlongStreamInfo>> getStream(@Query("groupId") String groupId,
             @Query("streamId") String streamId);
 
+    @GET("stream/getBrief")
+    Call<Response<InlongStreamBriefInfo>> getStreamBriefInfo(@Query("groupId") String groupId,
+            @Query("streamId") String streamId);
+
     @POST("stream/list")
     Call<Response<PageResult<InlongStreamBriefInfo>>> listByCondition(@Body InlongStreamPageRequest request);
 
@@ -58,16 +68,20 @@ public interface InlongStreamApi {
     Call<Response<PageResult<InlongStreamInfo>>> listStream(@Body InlongStreamPageRequest request);
 
     @POST("stream/startProcess/{groupId}/{streamId}")
-    Call<Response<Boolean>> startProcess(@Path("groupId") String groupId, @Path("streamId") String streamId);
+    Call<Response<Boolean>> startProcess(@Path("groupId") String groupId, @Path("streamId") String streamId,
+            @Query("sync") boolean sync);
 
     @POST("stream/suspendProcess/{groupId}/{streamId}")
-    Call<Response<Boolean>> suspendProcess(@Path("groupId") String groupId, @Path("streamId") String streamId);
+    Call<Response<Boolean>> suspendProcess(@Path("groupId") String groupId, @Path("streamId") String streamId,
+            @Query("sync") boolean sync);
 
     @POST("stream/restartProcess/{groupId}/{streamId}")
-    Call<Response<Boolean>> restartProcess(@Path("groupId") String groupId, @Path("streamId") String streamId);
+    Call<Response<Boolean>> restartProcess(@Path("groupId") String groupId, @Path("streamId") String streamId,
+            @Query("sync") boolean sync);
 
     @POST("stream/deleteProcess/{groupId}/{streamId}")
-    Call<Response<Boolean>> deleteProcess(@Path("groupId") String groupId, @Path("streamId") String streamId);
+    Call<Response<Boolean>> deleteProcess(@Path("groupId") String groupId, @Path("streamId") String streamId,
+            @Query("sync") boolean sync);
 
     @DELETE("stream/delete")
     Call<Response<Boolean>> delete(@Query("groupId") String groupId, @Query("streamId") String streamId);
@@ -76,6 +90,5 @@ public interface InlongStreamApi {
     Call<Response<List<StreamField>>> parseFields(@Body ParseFieldRequest parseFieldRequest);
 
     @GET("stream/listMessages")
-    Call<Response<List<BriefMQMessage>>> listMessages(@Query("groupId") String groupId,
-            @Query("streamId") String streamId, @Query("messageCount") Integer messageCount);
+    Call<Response<List<BriefMQMessage>>> listMessages(@QueryMap Map<String, Object> query);
 }

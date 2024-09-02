@@ -18,13 +18,13 @@
 package org.apache.inlong.manager.pojo.sort.node.provider;
 
 import org.apache.inlong.common.enums.MetaField;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.LongFormatInfo;
 import org.apache.inlong.manager.common.consts.SinkType;
 import org.apache.inlong.manager.pojo.sink.SinkField;
 import org.apache.inlong.manager.pojo.sink.starrocks.StarRocksSink;
 import org.apache.inlong.manager.pojo.sort.node.base.LoadNodeProvider;
 import org.apache.inlong.manager.pojo.stream.StreamField;
 import org.apache.inlong.manager.pojo.stream.StreamNode;
-import org.apache.inlong.sort.formats.common.LongFormatInfo;
 import org.apache.inlong.sort.protocol.FieldInfo;
 import org.apache.inlong.sort.protocol.node.LoadNode;
 import org.apache.inlong.sort.protocol.node.format.Format;
@@ -32,6 +32,7 @@ import org.apache.inlong.sort.protocol.node.load.StarRocksLoadNode;
 import org.apache.inlong.sort.protocol.transformation.FieldRelation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
  * The Provider for creating StarRocks load nodes.
  */
 @Slf4j
+@Service
 public class StarRocksProvider implements LoadNodeProvider {
 
     @Override

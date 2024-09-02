@@ -18,7 +18,7 @@
 package org.apache.inlong.sort.starrocks.table.sink.table;
 
 import org.apache.inlong.sort.base.metric.MetricOption;
-import org.apache.inlong.sort.base.metric.SinkMetricData;
+import org.apache.inlong.sort.base.metric.SinkExactlyMetric;
 import org.apache.inlong.sort.starrocks.table.sink.utils.SchemaUtils;
 
 import com.google.common.base.Strings;
@@ -55,6 +55,7 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.binary.NestedRowData;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.InstantiationUtil;
+import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +69,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static org.apache.inlong.sort.base.util.CalculateObjectSizeUtils.getDataSize;
 
 /**
  * StarRocks dynamic sink function. It supports insert, upsert, delete in Starrocks.
@@ -86,7 +89,7 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
 
     private transient volatile ListState<StarrocksSnapshotState> snapshotStates;
     private final Map<Long, List<StreamLoadSnapshot>> snapshotMap = new ConcurrentHashMap<>();
-    private transient SinkMetricData sinkMetricData;
+    private transient SinkExactlyMetric sinkExactlyMetric;
 
     @Deprecated
     private transient ListState<Map<String, StarRocksSinkBufferEntity>> legacyState;
@@ -96,6 +99,7 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
     private String auditHostAndPorts;
     private String auditKeys;
     private SchemaUtils schemaUtils;
+    private String stateKey;
 
     public StarRocksDynamicSinkFunctionV2(StarRocksSinkOptions sinkOptions,
             TableSchema schema,
@@ -118,6 +122,15 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
         rowTransformer.setTableSchema(schema);
         this.sinkManager = new StarRocksSinkManagerV2(sinkOptions.getProperties(),
                 sinkOptions.getSemantic() == StarRocksSinkSemantic.AT_LEAST_ONCE);
+    }
+
+    public StarRocksDynamicSinkFunctionV2(
+            StarRocksSinkOptions sinkOptions,
+            TableSchema schema,
+            StarRocksIRowTransformer<T> rowTransformer, String inlongMetric,
+            String auditHostAndPorts, String auditKeys, String stateKey) {
+        this(sinkOptions, schema, rowTransformer, inlongMetric, auditHostAndPorts, auditKeys);
+        this.stateKey = stateKey;
     }
 
     @Override
@@ -196,19 +209,18 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
 
         Object[] data = rowTransformer.transform(value, sinkOptions.supportUpsertDelete());
 
-        ouputMetrics(value, data);
-
         sinkManager.write(
                 null,
                 sinkOptions.getDatabaseName(),
                 sinkOptions.getTableName(),
                 serializer.serialize(schemaUtils.filterOutTimeField(data)));
 
+        ouputMetrics(value, data);
     }
 
     private void ouputMetrics(T value, Object[] data) {
-        if (sinkMetricData != null) {
-            sinkMetricData.invokeWithEstimate(value, schemaUtils.getDataTime(data));
+        if (sinkExactlyMetric != null) {
+            sinkExactlyMetric.invoke(1, getDataSize(value), schemaUtils.getDataTime(data));
         }
     }
 
@@ -226,10 +238,10 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
                 .build();
 
         if (metricOption != null) {
-            sinkMetricData = new SinkMetricData(metricOption, getRuntimeContext().getMetricGroup());
+            sinkExactlyMetric = new SinkExactlyMetric(metricOption, getRuntimeContext().getMetricGroup());
         }
 
-        notifyCheckpointComplete(Long.MAX_VALUE);
+        commitTransaction(Long.MAX_VALUE);
         log.info("Open sink function v2. {}", EnvUtils.getGitInformation());
     }
 
@@ -254,7 +266,9 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
 
     @Override
     public void snapshotState(FunctionSnapshotContext functionSnapshotContext) throws Exception {
+        updateCurrentCheckpointId(functionSnapshotContext.getCheckpointId());
         sinkManager.flush();
+
         if (sinkOptions.getSemantic() != StarRocksSinkSemantic.EXACTLY_ONCE) {
             return;
         }
@@ -282,19 +296,23 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
             return;
         }
 
+        String transactionStateName = "starrocks-sink-transaction"
+                + (StringUtils.isNullOrWhitespaceOnly(stateKey) ? "" : "-" + stateKey);
         ListStateDescriptor<byte[]> descriptor =
                 new ListStateDescriptor<>(
-                        "starrocks-sink-transaction",
+                        transactionStateName,
                         TypeInformation.of(new TypeHint<byte[]>() {
                         }));
 
         ListState<byte[]> listState = functionInitializationContext.getOperatorStateStore().getListState(descriptor);
         snapshotStates = new SimpleVersionedListState<>(listState, new StarRocksVersionedSerializer());
 
+        String legacyStateName = "buffered-rows"
+                + (StringUtils.isNullOrWhitespaceOnly(stateKey) ? "" : "-" + stateKey);
         // old version
         ListStateDescriptor<Map<String, StarRocksSinkBufferEntity>> legacyDescriptor =
                 new ListStateDescriptor<>(
-                        "buffered-rows",
+                        legacyStateName,
                         TypeInformation.of(new TypeHint<Map<String, StarRocksSinkBufferEntity>>() {
                         }));
         legacyState = functionInitializationContext.getOperatorStateStore().getListState(legacyDescriptor);
@@ -322,7 +340,12 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
 
     @Override
     public void notifyCheckpointComplete(long checkpointId) {
+        commitTransaction(checkpointId);
+        flushAudit();
+        updateLastCheckpointId(checkpointId);
+    }
 
+    private void commitTransaction(long checkpointId) {
         boolean succeed = true;
 
         List<Long> commitCheckpointIds = snapshotMap.keySet().stream()
@@ -369,6 +392,24 @@ public class StarRocksDynamicSinkFunctionV2<T> extends StarRocksDynamicSinkFunct
                     entity.getBuffer().size(), entity.getDatabase(), entity.getTable());
         }
         legacyData.clear();
+    }
+
+    private void flushAudit() {
+        if (sinkExactlyMetric != null) {
+            sinkExactlyMetric.flushAudit();
+        }
+    }
+
+    private void updateCurrentCheckpointId(long checkpointId) {
+        if (sinkExactlyMetric != null) {
+            sinkExactlyMetric.updateCurrentCheckpointId(checkpointId);
+        }
+    }
+
+    private void updateLastCheckpointId(long checkpointId) {
+        if (sinkExactlyMetric != null) {
+            sinkExactlyMetric.updateLastCheckpointId(checkpointId);
+        }
     }
 
 }

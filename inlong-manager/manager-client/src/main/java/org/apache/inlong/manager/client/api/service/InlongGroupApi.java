@@ -17,6 +17,7 @@
 
 package org.apache.inlong.manager.client.api.service;
 
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.group.InlongGroupBriefInfo;
@@ -25,6 +26,7 @@ import org.apache.inlong.manager.pojo.group.InlongGroupRequest;
 import org.apache.inlong.manager.pojo.group.InlongGroupResetRequest;
 import org.apache.inlong.manager.pojo.group.InlongGroupTopicInfo;
 import org.apache.inlong.manager.pojo.group.InlongGroupTopicRequest;
+import org.apache.inlong.manager.pojo.schedule.OfflineJobRequest;
 import org.apache.inlong.manager.pojo.workflow.WorkflowResult;
 
 import retrofit2.Call;
@@ -50,11 +52,17 @@ public interface InlongGroupApi {
     @POST("group/save")
     Call<Response<String>> createGroup(@Body InlongGroupRequest request);
 
+    @POST("group/batchSave")
+    Call<Response<List<BatchResult>>> batchCreateGroup(@Body List<InlongGroupRequest> requestList);
+
     @POST("group/update")
     Call<Response<String>> updateGroup(@Body InlongGroupRequest request);
 
     @POST("group/startProcess/{id}")
-    Call<Response<WorkflowResult>> initInlongGroup(@Path("id") String id);
+    Call<Response<WorkflowResult>> startProcess(@Path("id") String id);
+
+    @POST("group/batchStartProcess/{id}")
+    Call<Response<WorkflowResult>> batchStartProcess(@Body List<String> groupIdList);
 
     @POST("group/suspendProcessAsync/{id}")
     Call<Response<String>> suspendProcessAsync(@Path("id") String id);
@@ -85,4 +93,13 @@ public interface InlongGroupApi {
 
     @GET("group/listTopics")
     Call<Response<List<InlongGroupTopicInfo>>> listTopics(@Body InlongGroupTopicRequest request);
+
+    @GET("group/switch/start/{groupId}/{clusterTag}")
+    Call<Response<Boolean>> startTagSwitch(@Path("groupId") String groupId, @Path("clusterTag") String clusterTag);
+
+    @GET("group/switch/finish/{groupId}")
+    Call<Response<Boolean>> finishTagSwitch(@Path("groupId") String groupId);
+
+    @POST("group/submitOfflineJob")
+    Call<Response<Boolean>> submitOfflineJob(@Body OfflineJobRequest request);
 }

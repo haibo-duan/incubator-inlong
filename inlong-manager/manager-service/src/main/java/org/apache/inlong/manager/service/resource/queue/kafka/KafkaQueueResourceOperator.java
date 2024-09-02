@@ -23,6 +23,8 @@ import org.apache.inlong.manager.common.enums.ClusterType;
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.exceptions.WorkflowListenerException;
 import org.apache.inlong.manager.common.util.Preconditions;
+import org.apache.inlong.manager.dao.entity.InlongStreamEntity;
+import org.apache.inlong.manager.dao.entity.StreamSinkEntity;
 import org.apache.inlong.manager.pojo.cluster.ClusterInfo;
 import org.apache.inlong.manager.pojo.cluster.kafka.KafkaClusterInfo;
 import org.apache.inlong.manager.pojo.consume.BriefMQMessage;
@@ -30,6 +32,7 @@ import org.apache.inlong.manager.pojo.group.InlongGroupInfo;
 import org.apache.inlong.manager.pojo.group.kafka.InlongKafkaInfo;
 import org.apache.inlong.manager.pojo.stream.InlongStreamBriefInfo;
 import org.apache.inlong.manager.pojo.stream.InlongStreamInfo;
+import org.apache.inlong.manager.pojo.stream.QueryMessageRequest;
 import org.apache.inlong.manager.service.cluster.InlongClusterService;
 import org.apache.inlong.manager.service.consume.InlongConsumeService;
 import org.apache.inlong.manager.service.resource.queue.QueueResourceOperator;
@@ -190,7 +193,7 @@ public class KafkaQueueResourceOperator implements QueueResourceOperator {
 
     @Override
     public List<BriefMQMessage> queryLatestMessages(InlongGroupInfo groupInfo, InlongStreamInfo streamInfo,
-            Integer messageCount) {
+            QueryMessageRequest request) {
         ClusterInfo clusterInfo = clusterService.getOne(groupInfo.getInlongClusterTag(), null, ClusterType.KAFKA);
 
         String topicName = streamInfo.getMqResource();
@@ -202,7 +205,15 @@ public class KafkaQueueResourceOperator implements QueueResourceOperator {
 
         String consumeGroup =
                 String.format(KAFKA_CONSUMER_GROUP_REALTIME_REVIEW, groupInfo.getInlongClusterTag(), topicName);
-        return kafkaOperator.queryLatestMessage((KafkaClusterInfo) clusterInfo, topicName, consumeGroup, messageCount,
-                streamInfo);
+        return kafkaOperator.queryLatestMessage((KafkaClusterInfo) clusterInfo, topicName, consumeGroup, streamInfo,
+                request);
+    }
+
+    @Override
+    public String getSortConsumeGroup(InlongGroupInfo groupInfo, InlongStreamEntity streamEntity,
+            StreamSinkEntity sinkEntity) {
+        InlongKafkaInfo kafkaInfo = (InlongKafkaInfo) groupInfo;
+        String topicName = streamEntity.getMqResource();
+        return String.format(KAFKA_CONSUMER_GROUP, kafkaInfo.getInlongClusterTag(), topicName);
     }
 }

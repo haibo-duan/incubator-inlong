@@ -25,6 +25,7 @@ import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.enums.SimpleGroupStatus;
 import org.apache.inlong.manager.common.util.JsonUtils;
 import org.apache.inlong.manager.common.util.Preconditions;
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.group.InlongGroupBriefInfo;
@@ -35,6 +36,7 @@ import org.apache.inlong.manager.pojo.group.InlongGroupRequest;
 import org.apache.inlong.manager.pojo.group.InlongGroupResetRequest;
 import org.apache.inlong.manager.pojo.group.InlongGroupTopicInfo;
 import org.apache.inlong.manager.pojo.group.InlongGroupTopicRequest;
+import org.apache.inlong.manager.pojo.schedule.OfflineJobRequest;
 import org.apache.inlong.manager.pojo.sort.SortStatusInfo;
 import org.apache.inlong.manager.pojo.sort.SortStatusRequest;
 import org.apache.inlong.manager.pojo.workflow.WorkflowResult;
@@ -45,6 +47,7 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import retrofit2.Call;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.inlong.manager.client.api.impl.InlongGroupImpl.MQ_FIELD;
 import static org.apache.inlong.manager.client.api.impl.InlongGroupImpl.MQ_FIELD_OLD;
@@ -107,9 +110,8 @@ public class InlongGroupClient {
 
         if (responseBody.getErrMsg().contains("not exist")) {
             return null;
-        } else {
-            throw new RuntimeException(responseBody.getErrMsg());
         }
+        throw new RuntimeException(responseBody.getErrMsg());
     }
 
     /**
@@ -130,9 +132,8 @@ public class InlongGroupClient {
         }
         if (pageInfoResponse.getErrMsg().contains("not exist")) {
             return null;
-        } else {
-            throw new RuntimeException(pageInfoResponse.getErrMsg());
         }
+        throw new RuntimeException(pageInfoResponse.getErrMsg());
     }
 
     /**
@@ -170,6 +171,16 @@ public class InlongGroupClient {
     }
 
     /**
+     * Batch create inlong group
+     */
+    public List<BatchResult> batchCreateGroup(List<InlongGroupRequest> groupRequestList) {
+        Response<List<BatchResult>> response =
+                ClientUtils.executeHttpCall(inlongGroupApi.batchCreateGroup(groupRequestList));
+        ClientUtils.assertRespSuccess(response);
+        return response.getData();
+    }
+
+    /**
      * Update inlong group info
      *
      * @return groupId && errMsg
@@ -188,9 +199,18 @@ public class InlongGroupClient {
         return response.getData();
     }
 
-    public WorkflowResult initInlongGroup(InlongGroupRequest groupInfo) {
+    public WorkflowResult startProcess(InlongGroupRequest groupInfo) {
         Response<WorkflowResult> responseBody = ClientUtils.executeHttpCall(
-                inlongGroupApi.initInlongGroup(groupInfo.getInlongGroupId()));
+                inlongGroupApi.startProcess(groupInfo.getInlongGroupId()));
+        ClientUtils.assertRespSuccess(responseBody);
+        return responseBody.getData();
+    }
+
+    public WorkflowResult batchStartProcess(List<InlongGroupRequest> groupRequestList) {
+        List<String> groupIdList = groupRequestList.stream().map(InlongGroupRequest::getInlongGroupId).collect(
+                Collectors.toList());
+        Response<WorkflowResult> responseBody = ClientUtils.executeHttpCall(
+                inlongGroupApi.batchStartProcess(groupIdList));
         ClientUtils.assertRespSuccess(responseBody);
         return responseBody.getData();
     }
@@ -263,9 +283,8 @@ public class InlongGroupClient {
                     InlongGroupCountResponse.class);
         } else if (response.getErrMsg().contains("not exist")) {
             return null;
-        } else {
-            throw new RuntimeException(response.getErrMsg());
         }
+        throw new RuntimeException(response.getErrMsg());
     }
 
     public InlongGroupTopicInfo getTopic(String id) {
@@ -275,9 +294,8 @@ public class InlongGroupClient {
                     InlongGroupTopicInfo.class);
         } else if (response.getErrMsg().contains("not exist")) {
             return null;
-        } else {
-            throw new RuntimeException(response.getErrMsg());
         }
+        throw new RuntimeException(response.getErrMsg());
     }
 
     public List<InlongGroupTopicInfo> listTopics(InlongGroupTopicRequest request) {
@@ -287,8 +305,25 @@ public class InlongGroupClient {
             return response.getData();
         } else if (response.getErrMsg().contains("not exist")) {
             return null;
-        } else {
-            throw new RuntimeException(response.getErrMsg());
         }
+        throw new RuntimeException(response.getErrMsg());
+    }
+
+    public Boolean startTagSwitch(String groupId, String clusterTag) {
+        Response<Boolean> response = ClientUtils.executeHttpCall(inlongGroupApi.startTagSwitch(groupId, clusterTag));
+        ClientUtils.assertRespSuccess(response);
+        return response.getData();
+    }
+
+    public Boolean finishTagSwitch(String groupId) {
+        Response<Boolean> response = ClientUtils.executeHttpCall(inlongGroupApi.finishTagSwitch(groupId));
+        ClientUtils.assertRespSuccess(response);
+        return response.getData();
+    }
+
+    public Boolean submitOfflineJob(OfflineJobRequest request) {
+        Response<Boolean> responseBody = ClientUtils.executeHttpCall(inlongGroupApi.submitOfflineJob(request));
+        ClientUtils.assertRespSuccess(responseBody);
+        return responseBody.getData();
     }
 }

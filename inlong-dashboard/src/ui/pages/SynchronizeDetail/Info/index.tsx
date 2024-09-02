@@ -27,13 +27,14 @@ import request from '@/core/utils/request';
 import { useFormContent } from './config';
 import { CommonInterface } from '../common';
 import { State } from '@/core/stores';
+import dayjs from 'dayjs';
 
 type Props = CommonInterface;
 
 const Comp = ({ inlongGroupId, inlongStreamId, readonly, isCreate }: Props, ref) => {
   const { t } = useTranslation();
   const [editing, { setTrue, setFalse }] = useBoolean(isCreate);
-
+  const conventionalTimeFormat = 'YYYY-MM-DD HH:mm';
   const { defaultValue } = useDefaultMeta('sync');
 
   const { userName } = useSelector<State, State>(state => state);
@@ -46,6 +47,13 @@ const Comp = ({ inlongGroupId, inlongStreamId, readonly, isCreate }: Props, ref)
     return !!inlongGroupId;
   }, [inlongGroupId]);
 
+  useEffect(() => {
+    if (isCreate) {
+      form.setFieldValue('scheduleType', 0);
+      form.setFieldValue('scheduleUnit', 'H');
+    }
+  }, [form, isCreate]);
+
   const isUpdateStream = useMemo(() => {
     return !!inlongStreamId;
   }, [inlongStreamId]);
@@ -56,6 +64,11 @@ const Comp = ({ inlongGroupId, inlongStreamId, readonly, isCreate }: Props, ref)
     formatResult: data => ({
       ...data,
       inCharges: data.inCharges.split(','),
+      time: [
+        dayjs(dayjs(data?.startTime), conventionalTimeFormat),
+        dayjs(dayjs(data?.endTime), conventionalTimeFormat),
+      ],
+      delayTime: convertMinutesToDelayTime(data.delayTime),
     }),
     onSuccess: data => {
       setMqType(data.mqType);
@@ -72,8 +85,21 @@ const Comp = ({ inlongGroupId, inlongStreamId, readonly, isCreate }: Props, ref)
     }),
     {
       manual: true,
+      onSuccess: result => {
+        form.setFieldValue('sinkMultipleEnable', result.sinkMultipleEnable);
+      },
     },
   );
+  const convertTimeToMinutes = timeString => {
+    const time = dayjs(timeString, 'HH:mm');
+    return time.hour() * 60 + time.minute();
+  };
+
+  const convertMinutesToDelayTime = totalMinutes => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return dayjs().hour(hours).minute(minutes);
+  };
   const { data: streamData, run: getDataStream } = useRequest(
     {
       url: '/stream/list',
@@ -96,18 +122,25 @@ const Comp = ({ inlongGroupId, inlongStreamId, readonly, isCreate }: Props, ref)
   const onOk = async () => {
     const values = await form.validateFields();
 
-    const submitData = {
+    let submitData = {
       ...values,
       version: data?.version,
       inCharges: values.inCharges?.join(','),
-      inlongGroupMode: 1,
     };
-
+    if (values.inlongGroupMode === 2) {
+      submitData = {
+        ...submitData,
+        delayTime: convertTimeToMinutes(values?.delayTime?.format('HH:mm')),
+        startTime: dayjs(values?.time?.[0]?.format(conventionalTimeFormat)).valueOf(),
+        endTime: dayjs(values?.time?.[1]?.format(conventionalTimeFormat)).valueOf(),
+      };
+    }
+    delete submitData.time;
     const submitDataStream = {
       inlongGroupId: values.inlongGroupId,
-      inlongStreamId: values.inlongStreamId,
-      name: values.streamName,
+      inlongStreamId: values.inlongGroupId,
       fieldList: streamDetail?.fieldList,
+      sinkMultipleEnable: values.sinkMultipleEnable,
     };
     if (streamData !== undefined) {
       submitDataStream['version'] = streamData?.list[0].version;
@@ -116,6 +149,9 @@ const Comp = ({ inlongGroupId, inlongStreamId, readonly, isCreate }: Props, ref)
     if (isUpdate) {
       submitData.inlongGroupId = inlongGroupId;
       submitData.inlongStreamId = inlongStreamId;
+      if (mqType == 'PULSAR') {
+        submitData.pulsarTenat = form.getFieldValue('pulsarTenant');
+      }
     }
 
     const result = await request({
@@ -159,7 +195,6 @@ const Comp = ({ inlongGroupId, inlongStreamId, readonly, isCreate }: Props, ref)
 
   const onCancel = () => {
     form.setFieldsValue(data);
-    // form.setFieldsValue(dataStream);
     setFalse();
   };
 
@@ -178,7 +213,7 @@ const Comp = ({ inlongGroupId, inlongStreamId, readonly, isCreate }: Props, ref)
         initialValues={data}
         onValuesChange={(c, values) => setMqType(values.mqType)}
         useMaxWidth={1400}
-        col={12}
+        col={14}
       />
 
       {!isCreate && !readonly && (

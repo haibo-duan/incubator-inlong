@@ -18,9 +18,9 @@
 package org.apache.inlong.sort.protocol.node.extract;
 
 import org.apache.inlong.common.enums.MetaField;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.IntFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.StringFormatInfo;
 import org.apache.inlong.sort.SerializeBaseTest;
-import org.apache.inlong.sort.formats.common.IntFormatInfo;
-import org.apache.inlong.sort.formats.common.StringFormatInfo;
 import org.apache.inlong.sort.protocol.FieldInfo;
 import org.apache.inlong.sort.protocol.enums.KafkaScanStartupMode;
 import org.apache.inlong.sort.protocol.node.format.CsvFormat;
@@ -112,6 +112,7 @@ public class KafkaExtractNodeTest extends SerializeBaseTest<KafkaExtractNode> {
         formatMap.put(MetaField.OFFSET, "BIGINT METADATA FROM 'offset' VIRTUAL");
         formatMap.put(MetaField.PARTITION, "BIGINT METADATA FROM 'partition' VIRTUAL");
         formatMap.put(MetaField.TIMESTAMP, "TIMESTAMP_LTZ(3) METADATA FROM 'timestamp' VIRTUAL");
+        formatMap.put(MetaField.AUDIT_DATA_TIME, "BIGINT METADATA FROM 'consume_time' VIRTUAL");
 
         KafkaExtractNode node = getTestObject();
         boolean formatEquals = true;

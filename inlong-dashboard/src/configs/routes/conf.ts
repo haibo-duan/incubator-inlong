@@ -39,6 +39,10 @@ const conf: RouteProps[] = [
     ],
   },
   {
+    path: '/dataTemplate',
+    component: () => import('@/ui/pages/GroupDataTemplate'),
+  },
+  {
     path: '/consume',
     component: () => import('@/ui/pages/ConsumeDashboard'),
     childRoutes: [
@@ -114,6 +118,23 @@ const conf: RouteProps[] = [
   {
     path: '/tenant',
     component: () => import('@/ui/pages/TenantManagement'),
+  },
+  {
+    path: '/system',
+    childRoutes: [
+      {
+        path: '/:type?',
+        component: () => import('@/ui/pages/ModuleAudit'),
+      },
+    ],
+  },
+  {
+    path: '/agentModule',
+    component: () => import('@/ui/pages/AgentModule'),
+  },
+  {
+    path: '/agentPackage',
+    component: () => import('@/ui/pages/AgentPackage'),
   },
   {
     component: () => import('@/ui/pages/Error/404'),

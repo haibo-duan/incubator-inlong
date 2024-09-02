@@ -95,11 +95,7 @@ public class QueueResourceListener implements QueueOperateListener {
 
     @Override
     public boolean accept(WorkflowContext context) {
-        if (!isGroupProcessForm(context)) {
-            return false;
-        }
-        GroupResourceProcessForm processForm = (GroupResourceProcessForm) context.getProcessForm();
-        return InlongConstants.STANDARD_MODE.equals(processForm.getGroupInfo().getInlongGroupMode());
+        return isGroupProcessForm(context);
     }
 
     @Override
@@ -117,14 +113,24 @@ public class QueueResourceListener implements QueueOperateListener {
         groupProcessForm.setGroupInfo(groupInfo);
         groupProcessForm.setStreamInfos(streamService.list(groupId));
 
+        String operator = context.getOperator();
+        GroupOperateType operateType = groupProcessForm.getGroupOperateType();
+        if (InlongConstants.DATASYNC_REALTIME_MODE.equals(groupInfo.getInlongGroupMode())
+                || InlongConstants.DATASYNC_OFFLINE_MODE.equals(groupInfo.getInlongGroupMode())) {
+            log.warn("skip to execute QueueResourceListener as sync mode {} (1 for realtime sync, 2 for offline sync) "
+                    + "for groupId={}", groupInfo.getInlongGroupMode(), groupId);
+            if (GroupOperateType.INIT.equals(operateType)) {
+                this.createQueueForStreams(groupInfo, groupProcessForm.getStreamInfos(), operator);
+            }
+            return ListenerResult.success("skip - disable create mq resource for sync mode");
+        }
+
         if (InlongConstants.DISABLE_CREATE_RESOURCE.equals(groupInfo.getEnableCreateResource())) {
             log.warn("skip to execute QueueResourceListener as disable create resource for groupId={}", groupId);
             return ListenerResult.success("skip - disable create resource");
         }
 
         QueueResourceOperator queueOperator = queueOperatorFactory.getInstance(groupInfo.getMqType());
-        GroupOperateType operateType = groupProcessForm.getGroupOperateType();
-        String operator = context.getOperator();
         switch (operateType) {
             case INIT:
                 groupService.updateStatus(groupId, GroupStatus.CONFIG_ING.getCode(), operator);
@@ -134,7 +140,7 @@ public class QueueResourceListener implements QueueOperateListener {
                 this.createQueueForStreams(groupInfo, groupProcessForm.getStreamInfos(), operator);
                 break;
             case DELETE:
-                groupService.updateStatus(groupId, GroupStatus.DELETING.getCode(), operator);
+                groupService.updateStatus(groupId, GroupStatus.CONFIG_DELETING.getCode(), operator);
                 queueOperator.deleteQueueForGroup(groupInfo, operator);
                 break;
             default:

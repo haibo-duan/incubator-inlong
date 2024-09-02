@@ -18,6 +18,25 @@
 package org.apache.inlong.manager.pojo.sort.util;
 
 import org.apache.inlong.common.enums.MetaField;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.ArrayFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.BinaryFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.BooleanFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.ByteFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.DateFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.DecimalFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.DoubleFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.FloatFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.FormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.IntFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.LocalZonedTimestampFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.LongFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.MapFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.RowFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.ShortFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.StringFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.TimeFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.TimestampFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.VarBinaryFormatInfo;
 import org.apache.inlong.manager.common.enums.FieldType;
 import org.apache.inlong.manager.common.fieldtype.strategy.FieldTypeMappingStrategy;
 import org.apache.inlong.manager.pojo.fieldformat.ArrayFormat;
@@ -29,25 +48,6 @@ import org.apache.inlong.manager.pojo.fieldformat.StructFormat.Element;
 import org.apache.inlong.manager.pojo.fieldformat.VarBinaryFormat;
 import org.apache.inlong.manager.pojo.sink.SinkField;
 import org.apache.inlong.manager.pojo.stream.StreamField;
-import org.apache.inlong.sort.formats.common.ArrayFormatInfo;
-import org.apache.inlong.sort.formats.common.BinaryFormatInfo;
-import org.apache.inlong.sort.formats.common.BooleanFormatInfo;
-import org.apache.inlong.sort.formats.common.ByteFormatInfo;
-import org.apache.inlong.sort.formats.common.DateFormatInfo;
-import org.apache.inlong.sort.formats.common.DecimalFormatInfo;
-import org.apache.inlong.sort.formats.common.DoubleFormatInfo;
-import org.apache.inlong.sort.formats.common.FloatFormatInfo;
-import org.apache.inlong.sort.formats.common.FormatInfo;
-import org.apache.inlong.sort.formats.common.IntFormatInfo;
-import org.apache.inlong.sort.formats.common.LocalZonedTimestampFormatInfo;
-import org.apache.inlong.sort.formats.common.LongFormatInfo;
-import org.apache.inlong.sort.formats.common.MapFormatInfo;
-import org.apache.inlong.sort.formats.common.RowFormatInfo;
-import org.apache.inlong.sort.formats.common.ShortFormatInfo;
-import org.apache.inlong.sort.formats.common.StringFormatInfo;
-import org.apache.inlong.sort.formats.common.TimeFormatInfo;
-import org.apache.inlong.sort.formats.common.TimestampFormatInfo;
-import org.apache.inlong.sort.formats.common.VarBinaryFormatInfo;
 import org.apache.inlong.sort.protocol.FieldInfo;
 import org.apache.inlong.sort.protocol.MetaFieldInfo;
 
@@ -56,6 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Objects;
 
@@ -72,7 +73,7 @@ public class FieldInfoUtils {
         boolean isMetaField = sinkField.getIsMetaField() == 1;
         String fieldType = sinkField.getFieldType();
         if (Objects.nonNull(fieldTypeMappingStrategy)) {
-            fieldType = fieldTypeMappingStrategy.getFieldTypeMapping(fieldType);
+            fieldType = fieldTypeMappingStrategy.getSourceToSinkFieldTypeMapping(fieldType);
         }
 
         FieldInfo fieldInfo = getFieldInfo(sinkField.getFieldName(),
@@ -87,7 +88,7 @@ public class FieldInfoUtils {
         boolean isMetaField = streamField.getIsMetaField() == 1;
         String fieldType = streamField.getFieldType();
         if (Objects.nonNull(fieldTypeMappingStrategy)) {
-            fieldType = fieldTypeMappingStrategy.getFieldTypeMapping(fieldType);
+            fieldType = fieldTypeMappingStrategy.getSourceToSinkFieldTypeMapping(fieldType);
         }
 
         FieldInfo fieldInfo = getFieldInfo(streamField.getFieldName(), fieldType,
@@ -105,7 +106,7 @@ public class FieldInfoUtils {
         boolean isMetaField = streamField.getIsMetaField() == 1;
         String fieldType = streamField.getFieldType();
         if (Objects.nonNull(fieldTypeMappingStrategy)) {
-            fieldType = fieldTypeMappingStrategy.getFieldTypeMapping(fieldType);
+            fieldType = fieldTypeMappingStrategy.getSourceToSinkFieldTypeMapping(fieldType);
         }
 
         FieldInfo fieldInfo = getFieldInfo(streamField.getFieldName(), fieldType,
@@ -213,14 +214,25 @@ public class FieldInfoUtils {
             case DECIMAL:
                 return BigDecimal.class;
             case VARCHAR:
+            case STRING:
                 return String.class;
             case DATE:
             case TIME:
-            case TIMESTAMP:
                 return java.util.Date.class;
+            case TIMESTAMP:
+            case TIMESTAMPTZ:
+                return Timestamp.class;
             default:
                 return Object.class;
         }
+    }
+
+    /**
+     * Convert SQL type names to Java type string.
+     */
+    public static String sqlTypeToJavaTypeStr(String type) {
+        Class<?> clazz = FieldInfoUtils.sqlTypeToJavaType(type);
+        return clazz == Object.class ? "string" : clazz.getSimpleName().toLowerCase();
     }
 
     /**
@@ -248,6 +260,7 @@ public class FieldInfoUtils {
                 break;
             case INT32:
             case INT:
+            case INTEGER:
                 formatInfo = new IntFormatInfo();
                 break;
             case INT64:
@@ -278,7 +291,6 @@ public class FieldInfoUtils {
                     formatInfo = new DateFormatInfo();
                 }
                 break;
-            case DATETIME:
             case TIME:
                 if (StringUtils.isNotBlank(format)) {
                     formatInfo = new TimeFormatInfo(convertTimestampOrDataFormat(format));
@@ -287,12 +299,14 @@ public class FieldInfoUtils {
                 }
                 break;
             case TIMESTAMP:
+            case DATETIME:
                 if (StringUtils.isNotBlank(format)) {
                     formatInfo = new TimestampFormatInfo(convertTimestampOrDataFormat(format));
                 } else {
                     formatInfo = new TimestampFormatInfo();
                 }
                 break;
+            case TIMESTAMPTZ:
             case LOCAL_ZONE_TIMESTAMP:
                 if (StringUtils.isNotBlank(format)) {
                     formatInfo = new LocalZonedTimestampFormatInfo(convertTimestampOrDataFormat(format), 2);

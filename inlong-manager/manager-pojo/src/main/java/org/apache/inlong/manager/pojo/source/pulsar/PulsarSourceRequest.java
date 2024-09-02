@@ -27,8 +27,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.nio.charset.StandardCharsets;
-
 /**
  * Pulsar source request
  */
@@ -61,17 +59,32 @@ public class PulsarSourceRequest extends SourceRequest {
     private String primaryKey;
 
     @ApiModelProperty(value = "Data encoding format: UTF-8, GBK")
-    private String dataEncoding = StandardCharsets.UTF_8.toString();
+    private String dataEncoding;
 
     @ApiModelProperty(value = "Data separator")
-    private String dataSeparator = String.valueOf((int) '|');
+    private String dataSeparator;
+
+    @ApiModelProperty(value = "KV separator")
+    private String kvSeparator;
 
     @ApiModelProperty(value = "Data field escape symbol")
     private String dataEscapeChar;
 
+    @ApiModelProperty(value = "The message body wrap  wrap type, including: RAW, INLONG_MSG_V0, INLONG_MSG_V1, etc")
+    private String wrapType;
+
     @ApiModelProperty("Configure the Source's startup mode."
             + " Available options are earliest, latest, external-subscription, and specific-offsets.")
     private String scanStartupMode = "earliest";
+
+    @ApiModelProperty(value = "Client auth plugin class name")
+    private String clientAuthPluginClassName;
+
+    @ApiModelProperty(value = "Client auth params")
+    private String clientAuthParams;
+
+    @ApiModelProperty("Reset subscription time")
+    private Long resetTime;
 
     public PulsarSourceRequest() {
         this.setSourceType(SourceType.PULSAR);

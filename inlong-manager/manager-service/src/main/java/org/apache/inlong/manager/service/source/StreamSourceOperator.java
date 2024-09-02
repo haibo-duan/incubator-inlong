@@ -20,6 +20,7 @@ package org.apache.inlong.manager.service.source;
 import org.apache.inlong.manager.dao.entity.StreamSourceEntity;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.group.InlongGroupInfo;
+import org.apache.inlong.manager.pojo.source.DataAddTaskRequest;
 import org.apache.inlong.manager.pojo.source.SourceRequest;
 import org.apache.inlong.manager.pojo.source.StreamSource;
 import org.apache.inlong.manager.pojo.stream.InlongStreamInfo;
@@ -42,6 +43,8 @@ public interface StreamSourceOperator {
      * Determines whether the current instance matches the specified type.
      */
     Boolean accept(String sourceType);
+
+    String getExtParams(StreamSourceEntity sourceEntity);
 
     /**
      * Save the source info.
@@ -115,5 +118,30 @@ public interface StreamSourceOperator {
      * @param operator name of operator
      */
     void restartOpt(SourceRequest request, String operator);
+
+    /**
+     * Sync the source field info to stream fields.
+     *
+     * @param request request of source
+     * @param operator operator
+     */
+    void syncSourceFieldInfo(SourceRequest request, String operator);
+
+    /**
+     * Save the data add task info.
+     *
+     * @param request request of data add task
+     * @param operator name of operator
+     * @return source id after saving
+     */
+    Integer addDataAddTask(DataAddTaskRequest request, String operator);
+
+    /**
+     * Update the agent task config info.
+     *
+     * @param request source request
+     * @param operator name of the operator
+     */
+    void updateAgentTaskConfig(SourceRequest request, String operator);
 
 }

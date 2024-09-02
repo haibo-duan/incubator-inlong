@@ -17,12 +17,14 @@
 
 package org.apache.inlong.sort.protocol.node.extract;
 
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.FloatFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.IntFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.LongFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.StringFormatInfo;
 import org.apache.inlong.sort.SerializeBaseTest;
-import org.apache.inlong.sort.formats.common.FloatFormatInfo;
-import org.apache.inlong.sort.formats.common.IntFormatInfo;
-import org.apache.inlong.sort.formats.common.LongFormatInfo;
-import org.apache.inlong.sort.formats.common.StringFormatInfo;
 import org.apache.inlong.sort.protocol.FieldInfo;
+import org.apache.inlong.sort.protocol.node.format.CsvFormat;
+import org.apache.inlong.sort.protocol.node.format.Format;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,8 +41,9 @@ public class TubeMQExtractNodeTest extends SerializeBaseTest<TubeMQExtractNode> 
                 new FieldInfo("age", new IntFormatInfo()),
                 new FieldInfo("salary", new FloatFormatInfo()));
 
+        Format format = new CsvFormat();
         return new TubeMQExtractNode("1", "tubeMQ_input", fields, null, null,
-                "127.0.0.1:8715", "inlong", "json", "test", null, null);
+                "127.0.0.1:8715", "inlong", format, "test", null, null);
 
     }
 }

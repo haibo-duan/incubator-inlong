@@ -23,6 +23,7 @@ import org.apache.inlong.common.pojo.sdk.CacheZone;
 import org.apache.inlong.common.pojo.sdk.CacheZoneConfig;
 import org.apache.inlong.common.pojo.sdk.SortSourceConfigResponse;
 import org.apache.inlong.common.pojo.sdk.Topic;
+import org.apache.inlong.manager.common.consts.InlongConstants;
 import org.apache.inlong.manager.common.enums.ClusterType;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
 import org.apache.inlong.manager.common.util.Preconditions;
@@ -32,11 +33,12 @@ import org.apache.inlong.manager.pojo.sort.standalone.SortSourceClusterInfo;
 import org.apache.inlong.manager.pojo.sort.standalone.SortSourceGroupInfo;
 import org.apache.inlong.manager.pojo.sort.standalone.SortSourceStreamInfo;
 import org.apache.inlong.manager.pojo.sort.standalone.SortSourceStreamSinkInfo;
-import org.apache.inlong.manager.service.core.SortConfigLoader;
+import org.apache.inlong.manager.service.core.ConfigLoader;
 import org.apache.inlong.manager.service.core.SortSourceService;
 
 import com.google.gson.Gson;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +111,7 @@ public class SortSourceServiceImpl implements SortSourceService {
     private Map<String, Map<String, List<SortSourceStreamSinkInfo>>> streamSinkMap;
 
     @Autowired
-    private SortConfigLoader configLoader;
+    private ConfigLoader configLoader;
 
     @PostConstruct
     public void initialize() {
@@ -197,16 +199,24 @@ public class SortSourceServiceImpl implements SortSourceService {
                 .collect(Collectors.toMap(SortSourceClusterInfo::getName, v -> v));
 
         // group mq clusters by cluster tag
-        mqClusters = allClusters.stream()
+        mqClusters = new HashMap<>();
+        allClusters.stream()
                 .filter(cluster -> SUPPORTED_MQ_TYPE.contains(cluster.getType()))
                 .filter(SortSourceClusterInfo::isConsumable)
-                .collect(Collectors.groupingBy(SortSourceClusterInfo::getClusterTags));
+                .forEach(mq -> {
+                    Set<String> tags = mq.getClusterTagsSet();
+                    tags.forEach(tag -> {
+                        List<SortSourceClusterInfo> list = mqClusters.computeIfAbsent(tag, k -> new ArrayList<>());
+                        list.add(mq);
+                    });
+                });
 
         // reload all stream sinks, to Map<clusterName, Map<taskName, List<groupId>>> format
         List<SortSourceStreamSinkInfo> allStreamSinks = configLoader.loadAllStreamSinks();
         streamSinkMap = new HashMap<>();
         allStreamSinks.stream()
                 .filter(sink -> StringUtils.isNotBlank(sink.getSortClusterName()))
+                .filter(sink -> Objects.nonNull(sortClusters.get(sink.getSortClusterName())))
                 .filter(sink -> StringUtils.isNotBlank(sink.getSortTaskName()))
                 .forEach(sink -> {
                     Map<String, List<SortSourceStreamSinkInfo>> task2groupsMap =
@@ -219,6 +229,8 @@ public class SortSourceServiceImpl implements SortSourceService {
         // reload all groups
         groupInfos = configLoader.loadAllGroup()
                 .stream()
+                .filter(group -> StringUtils.isNotBlank(group.getMqResource()))
+                .filter(group -> StringUtils.isNotBlank(group.getClusterTag()))
                 .collect(Collectors.toMap(SortSourceGroupInfo::getGroupId, info -> info));
 
         // reload all back up cluster
@@ -234,6 +246,7 @@ public class SortSourceServiceImpl implements SortSourceService {
         // reload all streams
         allStreams = configLoader.loadAllStreams()
                 .stream()
+                .filter(stream -> StringUtils.isNotBlank(stream.getMqResource()))
                 .collect(Collectors.groupingBy(SortSourceStreamInfo::getInlongGroupId,
                         Collectors.toMap(SortSourceStreamInfo::getInlongStreamId, info -> info)));
 
@@ -298,7 +311,7 @@ public class SortSourceServiceImpl implements SortSourceService {
             List<SortSourceStreamSinkInfo> sinkList) {
 
         Preconditions.expectNotNull(sortClusters.get(clusterName), "sort cluster should not be NULL");
-        String sortClusterTag = sortClusters.get(clusterName).getClusterTags();
+        Set<String> tags = sortClusters.get(clusterName).getClusterTagsSet();
 
         // get group infos
         List<SortSourceStreamSinkInfo> sinkInfoList = sinkList.stream()
@@ -311,10 +324,10 @@ public class SortSourceServiceImpl implements SortSourceService {
         Map<String, List<SortSourceStreamSinkInfo>> tag2SinkInfos = sinkInfoList.stream()
                 .filter(sink -> Objects.nonNull(groupInfos.get(sink.getGroupId())))
                 .filter(sink -> {
-                    if (StringUtils.isBlank(sortClusterTag)) {
+                    if (CollectionUtils.isEmpty(tags)) {
                         return true;
                     }
-                    return sortClusterTag.equals(groupInfos.get(sink.getGroupId()).getClusterTag());
+                    return tags.contains(groupInfos.get(sink.getGroupId()).getClusterTag());
                 })
                 .collect(Collectors.groupingBy(sink -> {
                     SortSourceGroupInfo groupInfo = groupInfos.get(sink.getGroupId());
@@ -325,10 +338,10 @@ public class SortSourceServiceImpl implements SortSourceService {
         Map<String, List<SortSourceStreamSinkInfo>> backupTag2SinkInfos = sinkInfoList.stream()
                 .filter(sink -> backupClusterTag.containsKey(sink.getGroupId()))
                 .filter(sink -> {
-                    if (StringUtils.isBlank(sortClusterTag)) {
+                    if (CollectionUtils.isEmpty(tags)) {
                         return true;
                     }
-                    return sortClusterTag.equals(backupClusterTag.get(sink.getGroupId()));
+                    return tags.contains(backupClusterTag.get(sink.getGroupId()));
                 })
                 .collect(Collectors.groupingBy(info -> backupClusterTag.get(info.getGroupId())));
 
@@ -389,7 +402,7 @@ public class SortSourceServiceImpl implements SortSourceService {
             boolean isBackupTag) {
         Map<String, String> param = cluster.getExtParamsMap();
         String tenant = Optional.ofNullable(param.get(KEY_NEW_TENANT)).orElse(param.get(KEY_OLD_TENANT));
-        String auth = param.get(KEY_AUTH);
+        String auth = param.getOrDefault(KEY_AUTH, StringUtils.EMPTY);
         List<Topic> sdkTopics = sinks.stream()
                 .map(sink -> {
                     String groupId = sink.getGroupId();
@@ -408,7 +421,16 @@ public class SortSourceServiceImpl implements SortSourceService {
                                 topic = backupStreamMqResource.get(groupId).get(streamId);
                             }
                         }
-                        String fullTopic = tenant.concat("/").concat(namespace).concat("/").concat(topic);
+                        String fullTopic = tenant + InlongConstants.SLASH + namespace + InlongConstants.SLASH + topic;
+
+                        Map<String, String> groupExt = groupInfo.getExtParamsMap();
+                        String groupTenant = Optional
+                                .ofNullable(groupExt.get(KEY_NEW_TENANT))
+                                .orElse(groupExt.get(KEY_OLD_TENANT));
+                        if (StringUtils.isNotBlank(groupTenant)) {
+                            fullTopic = groupTenant + InlongConstants.SLASH + namespace + InlongConstants.SLASH + topic;
+                        }
+
                         return Topic.builder()
                                 .topic(fullTopic)
                                 .topicProperties(sink.getExtParamsMap())
@@ -436,6 +458,6 @@ public class SortSourceServiceImpl implements SortSourceService {
     private void setReloadTimer() {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
         long reloadInterval = 60000L;
-        executorService.scheduleAtFixedRate(this::reload, reloadInterval, reloadInterval, TimeUnit.MILLISECONDS);
+        executorService.scheduleWithFixedDelay(this::reload, reloadInterval, reloadInterval, TimeUnit.MILLISECONDS);
     }
 }

@@ -17,15 +17,13 @@
 
 package org.apache.inlong.agent.plugin.sources;
 
-import org.apache.inlong.agent.conf.JobProfile;
-import org.apache.inlong.agent.plugin.Reader;
-import org.apache.inlong.agent.plugin.sources.reader.SqlReader;
-import org.apache.inlong.agent.utils.AgentDbUtils;
+import org.apache.inlong.agent.conf.InstanceProfile;
+import org.apache.inlong.agent.plugin.Message;
+import org.apache.inlong.agent.plugin.sources.file.AbstractSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,54 +34,58 @@ public class DatabaseSqlSource extends AbstractSource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSqlSource.class);
 
-    private static final String JOB_DATABASE_SQL = "job.sql.command";
-
-    private static final String DATABASE_SOURCE_TAG_NAME = "AgentDatabaseSourceMetric";
-
     private static AtomicLong metricsIndex = new AtomicLong(0);
 
     public DatabaseSqlSource() {
     }
 
-    /**
-     * Use SQL to read data.
-     *
-     * @param sqlPattern sql pattern
-     * @return list of readers or null if sql is not correct.
-     */
-    private List<Reader> splitSqlJob(String sqlPattern) {
-        String[] sqlList = AgentDbUtils.replaceDynamicSeq(sqlPattern);
-        if (sqlList != null) {
-            List<Reader> result = new ArrayList<>();
-            for (String sql : sqlList) {
-                result.add(new SqlReader(sql));
-            }
-            return result;
-        }
+    @Override
+    protected String getThreadName() {
         return null;
     }
 
-    /**
-     * Use SQL or binlog to read data.
-     *
-     * @return reader list or null if database type is not correct.
-     */
     @Override
-    public List<Reader> split(JobProfile conf) {
-        super.init(conf);
-        String sqlPattern = conf.get(JOB_DATABASE_SQL, "").toLowerCase();
-        List<Reader> readerList = null;
-        if (!sqlPattern.isEmpty()) {
-            readerList = splitSqlJob(sqlPattern);
-        }
-        if (readerList != null) {
-            // increment the count of successful sources
-            sourceMetric.sourceSuccessCount.incrementAndGet();
-        } else {
-            // database type or sql is incorrect
-            // increment the count of failed sources
-            sourceMetric.sourceFailCount.incrementAndGet();
-        }
-        return readerList;
+    protected void initSource(InstanceProfile profile) {
+
+    }
+
+    @Override
+    protected void printCurrentState() {
+
+    }
+
+    @Override
+    protected boolean doPrepareToRead() {
+        return false;
+    }
+
+    @Override
+    protected List<SourceData> readFromSource() {
+        return null;
+    }
+
+    @Override
+    public Message read() {
+        return null;
+    }
+
+    @Override
+    protected boolean isRunnable() {
+        return runnable;
+    }
+
+    @Override
+    protected void releaseSource() {
+
+    }
+
+    @Override
+    public boolean sourceFinish() {
+        return false;
+    }
+
+    @Override
+    public boolean sourceExist() {
+        return false;
     }
 }

@@ -37,6 +37,11 @@ export const allDefaultNodes: MetaExportWithBackendList<NodeMetaType> = [
     LoadEntity: () => import('./Cls'),
   },
   {
+    label: 'Doris',
+    value: 'DORIS',
+    LoadEntity: () => import('./Doris'),
+  },
+  {
     label: 'Elasticsearch',
     value: 'ELASTICSEARCH',
     LoadEntity: () => import('./Elasticsearch'),
@@ -60,6 +65,11 @@ export const allDefaultNodes: MetaExportWithBackendList<NodeMetaType> = [
     label: 'MySQL',
     value: 'MYSQL',
     LoadEntity: () => import('./MySQL'),
+  },
+  {
+    label: 'OceanBase',
+    value: 'OCEANBASE',
+    LoadEntity: () => import('./OceanBase'),
   },
   {
     label: 'PostgreSQL',

@@ -30,6 +30,7 @@ import org.apache.inlong.sort.protocol.node.load.HudiLoadNode;
 import org.apache.inlong.sort.protocol.node.load.IcebergLoadNode;
 import org.apache.inlong.sort.protocol.node.load.KafkaLoadNode;
 import org.apache.inlong.sort.protocol.node.load.MySqlLoadNode;
+import org.apache.inlong.sort.protocol.node.load.OceanBaseLoadNode;
 import org.apache.inlong.sort.protocol.node.load.OracleLoadNode;
 import org.apache.inlong.sort.protocol.node.load.PostgresLoadNode;
 import org.apache.inlong.sort.protocol.node.load.RedisLoadNode;
@@ -74,9 +75,9 @@ import java.util.Map;
         @JsonSubTypes.Type(value = GreenplumLoadNode.class, name = "greenplumLoad"),
         @JsonSubTypes.Type(value = DorisLoadNode.class, name = "dorisLoad"),
         @JsonSubTypes.Type(value = StarRocksLoadNode.class, name = "starRocksLoad"),
-        @JsonSubTypes.Type(value = DorisLoadNode.class, name = "dorisLoad"),
         @JsonSubTypes.Type(value = HudiLoadNode.class, name = "hudiLoad"),
         @JsonSubTypes.Type(value = RedisLoadNode.class, name = "redisLoad"),
+        @JsonSubTypes.Type(value = OceanBaseLoadNode.class, name = "oceanBaseLoad"),
 })
 @NoArgsConstructor
 @Data

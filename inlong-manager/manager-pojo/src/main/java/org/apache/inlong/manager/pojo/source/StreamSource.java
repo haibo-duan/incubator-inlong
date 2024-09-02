@@ -83,6 +83,9 @@ public abstract class StreamSource extends StreamNode {
     @ApiModelProperty("Snapshot of this source task")
     private String snapshot;
 
+    @ApiModelProperty("Data Time zone")
+    private String dataTimeZone;
+
     @ApiModelProperty("Version")
     private Integer version;
 
@@ -98,24 +101,27 @@ public abstract class StreamSource extends StreamNode {
     @ApiModelProperty("Modifier")
     private String modifier;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "GMT+8")
     private Date createTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "GMT+8")
     private Date modifyTime;
 
     @Builder.Default
     @ApiModelProperty("Properties for source")
     private Map<String, Object> properties = new LinkedHashMap<>();
 
-    @ApiModelProperty("Null if not a sub source")
-    private Integer templateId;
+    @ApiModelProperty("Null if not a data add task")
+    private Integer taskMapId;
 
-    @ApiModelProperty("Sub source information of existing agents")
-    private List<SubSourceDTO> subSourceList;
+    @ApiModelProperty(value = "Audit version")
+    private String auditVersion;
+
+    @ApiModelProperty("Data add task information of existing agents")
+    private List<DataAddTaskDTO> dataAddTaskList;
 
     @ApiModelProperty(value = "Whether to ignore the parse errors of field value, true as default")
-    private boolean ignoreParseError;
+    private Boolean ignoreParseError;
 
     public SourceRequest genSourceRequest() {
         return null;

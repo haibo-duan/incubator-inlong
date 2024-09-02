@@ -18,7 +18,6 @@
 package org.apache.inlong.sort.standalone.sink.pulsar;
 
 import org.apache.inlong.sort.standalone.channel.ProfileEvent;
-import org.apache.inlong.sort.standalone.config.pojo.InlongId;
 import org.apache.inlong.sort.standalone.utils.Constants;
 import org.apache.inlong.sort.standalone.utils.InlongLoggerFactory;
 
@@ -29,12 +28,6 @@ import org.apache.flume.Transaction;
 import org.apache.flume.lifecycle.LifecycleState;
 import org.slf4j.Logger;
 
-import java.util.Map;
-
-/**
- * 
- * PulsarFederationWorker
- */
 public class PulsarFederationWorker extends Thread {
 
     public static final Logger LOG = InlongLoggerFactory.getLogger(PulsarFederationWorker.class);
@@ -45,13 +38,6 @@ public class PulsarFederationWorker extends Thread {
     private PulsarProducerFederation producerFederation;
     private LifecycleState status;
 
-    /**
-     * Constructor
-     * 
-     * @param sinkName
-     * @param workerIndex
-     * @param context
-     */
     public PulsarFederationWorker(String sinkName, int workerIndex, PulsarFederationSinkContext context) {
         super();
         this.workerName = sinkName + "-worker-" + workerIndex;
@@ -60,9 +46,6 @@ public class PulsarFederationWorker extends Thread {
         this.status = LifecycleState.IDLE;
     }
 
-    /**
-     * start
-     */
     @Override
     public void start() {
         this.producerFederation.start();
@@ -70,19 +53,12 @@ public class PulsarFederationWorker extends Thread {
         super.start();
     }
 
-    /**
-     * 
-     * close
-     */
     public void close() {
         // close all producers
         this.producerFederation.close();
         this.status = LifecycleState.STOP;
     }
 
-    /**
-     * run
-     */
     @Override
     public void run() {
         LOG.info(String.format("start PulsarSetWorker:%s", this.workerName));
@@ -126,27 +102,15 @@ public class PulsarFederationWorker extends Thread {
         }
     }
 
-    /**
-     * fillTopic
-     * 
-     * @param currentRecord
-     */
-    private String fillTopic(Event currentRecord) {
-        Map<String, String> headers = currentRecord.getHeaders();
-        String inlongGroupId = headers.get(Constants.INLONG_GROUP_ID);
-        String inlongStreamId = headers.get(Constants.INLONG_STREAM_ID);
-        String uid = InlongId.generateUid(inlongGroupId, inlongStreamId);
-        String topic = this.context.getTopic(uid);
+    private String fillTopic(ProfileEvent currentRecord) {
+        String topic = this.context.getTopic(currentRecord.getUid());
         if (!StringUtils.isBlank(topic)) {
-            headers.put(Constants.TOPIC, topic);
+            currentRecord.getHeaders().put(Constants.TOPIC, topic);
             return topic;
         }
         return "-";
     }
 
-    /**
-     * sleepOneInterval
-     */
     private void sleepOneInterval() {
         try {
             Thread.sleep(context.getProcessInterval());

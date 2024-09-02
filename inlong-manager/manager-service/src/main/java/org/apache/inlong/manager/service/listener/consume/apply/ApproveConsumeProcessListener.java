@@ -38,7 +38,6 @@ import org.apache.inlong.manager.pojo.queue.pulsar.PulsarTopicInfo;
 import org.apache.inlong.manager.pojo.workflow.form.process.ApplyConsumeProcessForm;
 import org.apache.inlong.manager.service.cluster.InlongClusterService;
 import org.apache.inlong.manager.service.resource.queue.pulsar.PulsarOperator;
-import org.apache.inlong.manager.service.resource.queue.pulsar.PulsarUtils;
 import org.apache.inlong.manager.service.resource.queue.tubemq.TubeMQOperator;
 import org.apache.inlong.manager.workflow.WorkflowContext;
 import org.apache.inlong.manager.workflow.event.ListenerResult;
@@ -46,7 +45,6 @@ import org.apache.inlong.manager.workflow.event.process.ProcessEventListener;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -129,31 +127,35 @@ public class ApproveConsumeProcessListener implements ProcessEventListener {
                 "mq resource cannot empty for groupId=" + groupId);
 
         String clusterTag = groupEntity.getInlongClusterTag();
-        ClusterInfo clusterInfo = clusterService.getOne(clusterTag, null, ClusterType.PULSAR);
-        PulsarClusterInfo pulsarCluster = (PulsarClusterInfo) clusterInfo;
-        try (PulsarAdmin pulsarAdmin = PulsarUtils.getPulsarAdmin(pulsarCluster)) {
-            InlongPulsarDTO pulsarDTO = InlongPulsarDTO.getFromJson(groupEntity.getExtParams());
-            String tenant = pulsarDTO.getPulsarTenant();
-            if (StringUtils.isBlank(tenant)) {
-                tenant = pulsarCluster.getPulsarTenant();
-            }
-            PulsarTopicInfo topicMessage = new PulsarTopicInfo();
-            topicMessage.setPulsarTenant(tenant);
-            topicMessage.setNamespace(mqResource);
+        List<ClusterInfo> clusterInfos = clusterService.listByTagAndType(clusterTag, ClusterType.PULSAR);
+        for (ClusterInfo clusterInfo : clusterInfos) {
+            PulsarClusterInfo pulsarCluster = (PulsarClusterInfo) clusterInfo;
+            try {
+                InlongPulsarDTO pulsarDTO = InlongPulsarDTO.getFromJson(groupEntity.getExtParams());
+                String tenant = pulsarDTO.getPulsarTenant();
+                if (StringUtils.isBlank(tenant)) {
+                    tenant = pulsarCluster.getPulsarTenant();
+                }
+                PulsarTopicInfo topicMessage = new PulsarTopicInfo();
+                topicMessage.setPulsarTenant(tenant);
+                topicMessage.setNamespace(mqResource);
 
-            List<String> topics = Arrays.asList(entity.getTopic().split(InlongConstants.COMMA));
-            this.createPulsarSubscription(pulsarAdmin, entity.getConsumerGroup(), topicMessage, topics);
-        } catch (Exception e) {
-            log.error("create pulsar topic failed", e);
-            throw new WorkflowListenerException("failed to create pulsar topic for groupId=" + groupId + ", reason: "
-                    + e.getMessage());
+                List<String> topics = Arrays.asList(entity.getTopic().split(InlongConstants.COMMA));
+
+                this.createPulsarSubscription(pulsarCluster, entity.getConsumerGroup(), topicMessage, topics);
+            } catch (Exception e) {
+                log.error("create pulsar topic failed", e);
+                throw new WorkflowListenerException(
+                        "failed to create pulsar topic for groupId=" + groupId + ", reason: "
+                                + e.getMessage());
+            }
         }
     }
 
-    private void createPulsarSubscription(PulsarAdmin pulsarAdmin, String subscription, PulsarTopicInfo topicInfo,
+    private void createPulsarSubscription(PulsarClusterInfo clusterInfo, String subscription, PulsarTopicInfo topicInfo,
             List<String> topics) {
         try {
-            pulsarOperator.createSubscriptions(pulsarAdmin, subscription, topicInfo, topics);
+            pulsarOperator.createSubscriptions(clusterInfo, subscription, topicInfo, topics);
         } catch (Exception e) {
             log.error("create pulsar consumer group failed", e);
             throw new WorkflowListenerException("failed to create pulsar consumer group");

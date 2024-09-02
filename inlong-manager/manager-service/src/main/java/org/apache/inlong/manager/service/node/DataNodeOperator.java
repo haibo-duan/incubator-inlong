@@ -17,6 +17,7 @@
 
 package org.apache.inlong.manager.service.node;
 
+import org.apache.inlong.common.pojo.sort.node.NodeConfig;
 import org.apache.inlong.manager.dao.entity.DataNodeEntity;
 import org.apache.inlong.manager.pojo.node.DataNodeInfo;
 import org.apache.inlong.manager.pojo.node.DataNodeRequest;
@@ -58,6 +59,14 @@ public interface DataNodeOperator {
     DataNodeInfo getFromEntity(DataNodeEntity entity);
 
     /**
+     * Get the data node config from the given entity.
+     *
+     * @param entity data node entity
+     * @return node config info
+     */
+    NodeConfig getNodeConfig(DataNodeEntity entity);
+
+    /**
      * Update the data node info.
      *
      * @param request request of update
@@ -83,9 +92,9 @@ public interface DataNodeOperator {
      * Update related stream source.
      *
      * @param request data node request
-     * @param oldEntity old data node entity
+     * @param dataNodeEntity data node entity
      * @param operator operator
      */
-    void updateRelatedStreamSource(DataNodeRequest request, DataNodeEntity oldEntity, String operator);
+    void updateRelatedStreamSource(DataNodeRequest request, DataNodeEntity dataNodeEntity, String operator);
 
 }

@@ -83,6 +83,12 @@ public class FileSourceDTO {
     @ApiModelProperty("Cycle unit")
     private String cycleUnit = "D";
 
+    @ApiModelProperty("Max file count")
+    private String maxFileCount;
+
+    @ApiModelProperty("Time zone")
+    private String timeZone;
+
     @ApiModelProperty("Whether retry")
     private Boolean retry = false;
 
@@ -92,8 +98,8 @@ public class FileSourceDTO {
     @ApiModelProperty("End time")
     private Long endTime = 0L;
 
-    @ApiModelProperty("Metadata filters by label, special parameters for K8S")
-    private Map<String, String> filterMetaByLabels;
+    @ApiModelProperty(value = "Audit version")
+    private String auditVersion;
 
     public static FileSourceDTO getFromRequest(@NotNull FileSourceRequest fileSourceRequest, String extParams) {
         FileSourceDTO dto = StringUtils.isNotBlank(extParams)

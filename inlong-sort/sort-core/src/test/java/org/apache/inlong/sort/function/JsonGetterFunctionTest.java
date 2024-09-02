@@ -17,7 +17,7 @@
 
 package org.apache.inlong.sort.function;
 
-import org.apache.inlong.sort.formats.common.StringFormatInfo;
+import org.apache.inlong.common.pojo.sort.dataflow.field.format.StringFormatInfo;
 import org.apache.inlong.sort.protocol.FieldInfo;
 import org.apache.inlong.sort.protocol.transformation.StringConstantParam;
 
@@ -46,7 +46,7 @@ public class JsonGetterFunctionTest extends AbstractTestBase {
     /**
      * Test for JsonGetter function
      *
-     * @throws Exception The exception may throw when test Encrypt function
+     * @throws Exception The exception may throw when test JsonGetter function
      */
     @Test
     public void testJsonGetterFunction() throws Exception {

@@ -26,6 +26,7 @@ import org.apache.inlong.manager.common.enums.TaskStatus;
 import org.apache.inlong.manager.common.enums.TenantUserTypeEnum;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
 import org.apache.inlong.manager.common.exceptions.WorkflowListenerException;
+import org.apache.inlong.manager.common.threadPool.VisiableThreadPoolTaskExecutor;
 import org.apache.inlong.manager.common.util.Preconditions;
 import org.apache.inlong.manager.dao.entity.InlongGroupEntity;
 import org.apache.inlong.manager.dao.entity.WorkflowProcessEntity;
@@ -40,6 +41,7 @@ import org.apache.inlong.manager.pojo.workflow.ProcessRequest;
 import org.apache.inlong.manager.pojo.workflow.TaskResponse;
 import org.apache.inlong.manager.pojo.workflow.WorkflowResult;
 import org.apache.inlong.manager.pojo.workflow.form.process.ApplyGroupProcessForm;
+import org.apache.inlong.manager.pojo.workflow.form.process.ApplyGroupProcessForm.GroupFullInfo;
 import org.apache.inlong.manager.pojo.workflow.form.process.GroupResourceProcessForm;
 import org.apache.inlong.manager.service.stream.InlongStreamService;
 import org.apache.inlong.manager.service.workflow.WorkflowService;
@@ -51,12 +53,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
 import java.util.concurrent.TimeUnit;
 
@@ -73,7 +75,7 @@ public class InlongGroupProcessService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InlongGroupProcessService.class);
 
-    private static final ExecutorService EXECUTOR_SERVICE = new ThreadPoolExecutor(
+    private static final ExecutorService EXECUTOR_SERVICE = new VisiableThreadPoolTaskExecutor(
             CORE_POOL_SIZE,
             MAX_POOL_SIZE,
             ALIVE_TIME_MS,
@@ -116,6 +118,24 @@ public class InlongGroupProcessService {
         return result;
     }
 
+    public WorkflowResult batchStartProcess(List<String> groupIdList, String operator) {
+        for (String groupId : groupIdList) {
+            LOGGER.info("begin to start approve process for groupId={} by operator={}", groupId, operator);
+
+            groupService.updateStatus(groupId, GroupStatus.TO_BE_APPROVAL.getCode(), operator);
+        }
+        ApplyGroupProcessForm form = genApplyGroupProcessForm(groupIdList);
+        WorkflowResult result = workflowService.start(ProcessName.APPLY_GROUP_PROCESS, operator, form);
+        List<TaskResponse> tasks = result.getNewTasks();
+        if (TaskStatus.FAILED == tasks.get(tasks.size() - 1).getStatus()) {
+            throw new BusinessException(ErrorCodeEnum.WORKFLOW_START_RECORD_FAILED,
+                    String.format("failed to start inlong group for groupId=%s", groupIdList));
+        }
+
+        LOGGER.info("success to start approve process for groupId={} by operator={}", groupIdList, operator);
+        return result;
+    }
+
     /**
      * Suspend InlongGroup in an asynchronous way.
      *
@@ -128,7 +148,7 @@ public class InlongGroupProcessService {
     public String suspendProcessAsync(String groupId, String operator) {
         LOGGER.info("begin to suspend process asynchronously for groupId={} by operator={}", groupId, operator);
 
-        groupService.updateStatus(groupId, GroupStatus.SUSPENDING.getCode(), operator);
+        groupService.updateStatus(groupId, GroupStatus.CONFIG_OFFLINE_ING.getCode(), operator);
         InlongGroupInfo groupInfo = groupService.get(groupId);
         GroupResourceProcessForm form = genGroupResourceProcessForm(groupInfo, GroupOperateType.SUSPEND);
         UserInfo userInfo = LoginUserUtils.getLoginUser();
@@ -151,7 +171,7 @@ public class InlongGroupProcessService {
     public WorkflowResult suspendProcess(String groupId, String operator) {
         LOGGER.info("begin to suspend process for groupId={} by operator={}", groupId, operator);
 
-        groupService.updateStatus(groupId, GroupStatus.SUSPENDING.getCode(), operator);
+        groupService.updateStatus(groupId, GroupStatus.CONFIG_OFFLINE_ING.getCode(), operator);
         InlongGroupInfo groupInfo = groupService.get(groupId);
         GroupResourceProcessForm form = genGroupResourceProcessForm(groupInfo, GroupOperateType.SUSPEND);
         WorkflowResult result = workflowService.start(ProcessName.SUSPEND_GROUP_PROCESS, operator, form);
@@ -175,7 +195,7 @@ public class InlongGroupProcessService {
     public String restartProcessAsync(String groupId, String operator) {
         LOGGER.info("begin to restart process asynchronously for groupId={} by operator={}", groupId, operator);
 
-        groupService.updateStatus(groupId, GroupStatus.RESTARTING.getCode(), operator);
+        groupService.updateStatus(groupId, GroupStatus.CONFIG_ONLINE_ING.getCode(), operator);
         InlongGroupInfo groupInfo = groupService.get(groupId);
         GroupResourceProcessForm form = genGroupResourceProcessForm(groupInfo, GroupOperateType.RESTART);
         UserInfo userInfo = LoginUserUtils.getLoginUser();
@@ -196,7 +216,7 @@ public class InlongGroupProcessService {
     public WorkflowResult restartProcess(String groupId, String operator) {
         LOGGER.info("begin to restart process for groupId={} by operator={}", groupId, operator);
 
-        groupService.updateStatus(groupId, GroupStatus.RESTARTING.getCode(), operator);
+        groupService.updateStatus(groupId, GroupStatus.CONFIG_ONLINE_ING.getCode(), operator);
         InlongGroupInfo groupInfo = groupService.get(groupId);
         GroupResourceProcessForm form = genGroupResourceProcessForm(groupInfo, GroupOperateType.RESTART);
         WorkflowResult result = workflowService.start(ProcessName.RESTART_GROUP_PROCESS, operator, form);
@@ -292,9 +312,9 @@ public class InlongGroupProcessService {
         boolean result;
         switch (status) {
             case CONFIG_ING:
-            case SUSPENDING:
-            case RESTARTING:
-            case DELETING:
+            case CONFIG_OFFLINE_ING:
+            case CONFIG_ONLINE_ING:
+            case CONFIG_DELETING:
                 final int rerunProcess = request.getRerunProcess();
                 final int resetFinalStatus = request.getResetFinalStatus();
                 result = pendingGroupOpt(groupInfo, operator, status, rerunProcess, resetFinalStatus);
@@ -333,13 +353,12 @@ public class InlongGroupProcessService {
     private GroupStatus getFinalStatus(GroupStatus pendingStatus) {
         switch (pendingStatus) {
             case CONFIG_ING:
+            case CONFIG_ONLINE_ING:
                 return GroupStatus.CONFIG_SUCCESSFUL;
-            case SUSPENDING:
-                return GroupStatus.SUSPENDED;
-            case RESTARTING:
-                return GroupStatus.RESTARTED;
+            case CONFIG_OFFLINE_ING:
+                return GroupStatus.CONFIG_OFFLINE_SUCCESSFUL;
             default:
-                return GroupStatus.DELETED;
+                return GroupStatus.CONFIG_DELETED;
         }
     }
 
@@ -366,6 +385,21 @@ public class InlongGroupProcessService {
         form.setGroupInfo(groupInfo);
         List<InlongStreamBriefInfo> infoList = streamService.listBriefWithSink(groupInfo.getInlongGroupId());
         form.setStreamInfoList(infoList);
+        return form;
+    }
+
+    private ApplyGroupProcessForm genApplyGroupProcessForm(List<String> groupIdList) {
+        ApplyGroupProcessForm form = new ApplyGroupProcessForm();
+        List<GroupFullInfo> groupFullInfoList = new ArrayList<>();
+        for (String groupId : groupIdList) {
+            InlongGroupInfo groupInfo = groupService.get(groupId);
+            List<InlongStreamBriefInfo> infoList = streamService.listBriefWithSink(groupInfo.getInlongGroupId());
+            GroupFullInfo groupFullInfo = new GroupFullInfo();
+            groupFullInfo.setGroupInfo(groupInfo);
+            groupFullInfo.setStreamInfoList(infoList);
+            groupFullInfoList.add(groupFullInfo);
+        }
+        form.setGroupFullInfoList(groupFullInfoList);
         return form;
     }
 

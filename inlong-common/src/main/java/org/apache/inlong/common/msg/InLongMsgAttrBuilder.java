@@ -158,7 +158,7 @@ public class InLongMsgAttrBuilder {
                 throw new Exception("t is null");
             }
 
-            attrBuffer.append("&iname=").append(id);
+            attrBuffer.append("&streamId=").append(id);
 
             Date d = transData(this.tt, t);
             String tstr = null;
@@ -251,47 +251,44 @@ public class InLongMsgAttrBuilder {
         public String buildAttr() throws Exception {
             // #lizard forgives
             if (id != null) {
-                attrBuffer.append("&iname=").append(id);
+                attrBuffer.append("&streamId=").append(id);
             } else if (idp >= 0) {
                 attrBuffer.append("&idp=").append(idp);
             }
             if (t != null) {
                 String tstr = null;
-                if (tt != null && tt == TimeType.NORMAL) {
-                    if (makeSureTimeNormal(t)) {
-                        tstr = t;
-                    }
+                if (tt != null && tt == TimeType.NORMAL && makeSureTimeNormal(t)) {
+                    tstr = t;
                 } else {
                     if (this.p == null) {
                         this.p = PartitionUnit.HOUR;
                     }
                     Date d = transData(tt, t);
-                    if (this.p == PartitionUnit.DAY) {
-                        SimpleDateFormat f = new SimpleDateFormat("yyyyMMdd");
-                        tstr = f.format(d);
-                    } else if (this.p == PartitionUnit.HOUR) {
-                        SimpleDateFormat f = new SimpleDateFormat("yyyyMMddHH");
-                        tstr = f.format(d);
-                    } else if (this.p == PartitionUnit.HALFHOUR) {
-                        int idx =
-                                (int) ((d.getTime() % (60L * 60 * 1000)) / (30L * 60 * 1000));
-                        SimpleDateFormat f = new SimpleDateFormat("yyyyMMddHH");
-                        tstr = f.format(d) + "n" + idx;
-                    } else if (this.p == PartitionUnit.QUARTER) {
-                        int idx =
-                                (int) ((d.getTime() % (60L * 60 * 1000)) / (15L * 60 * 1000));
-                        SimpleDateFormat f = new SimpleDateFormat("yyyyMMddHH");
-                        tstr = f.format(d) + "q" + idx;
-                    } else if (this.p == PartitionUnit.TENMINS) {
-                        int idx =
-                                (int) ((d.getTime() % (60L * 60 * 1000)) / (10L * 60 * 1000));
-                        SimpleDateFormat f = new SimpleDateFormat("yyyyMMddHH");
-                        tstr = f.format(d) + "t" + idx;
-                    } else if (this.p == PartitionUnit.FIVEMINS) {
-                        int idx =
-                                (int) ((d.getTime() % (60L * 60 * 1000)) / (5L * 60 * 1000));
-                        SimpleDateFormat f = new SimpleDateFormat("yyyyMMddHH");
-                        tstr = f.format(d) + "f" + idx;
+                    SimpleDateFormat fd = new SimpleDateFormat("yyyyMMdd");
+                    SimpleDateFormat f = new SimpleDateFormat("yyyyMMddHH");
+                    switch (this.p) {
+                        case DAY:
+                            tstr = fd.format(d);
+                            break;
+                        case HOUR:
+                            tstr = f.format(d);
+                            break;
+                        case HALFHOUR:
+                            int idx = (int) ((d.getTime() % (60L * 60 * 1000)) / (30L * 60 * 1000));
+                            tstr = f.format(d) + "n" + idx;
+                            break;
+                        case QUARTER:
+                            idx = (int) ((d.getTime() % (60L * 60 * 1000)) / (15L * 60 * 1000));
+                            tstr = f.format(d) + "q" + idx;
+                            break;
+                        case TENMINS:
+                            idx = (int) ((d.getTime() % (60L * 60 * 1000)) / (10L * 60 * 1000));
+                            tstr = f.format(d) + "t" + idx;
+                            break;
+                        case FIVEMINS:
+                            idx = (int) ((d.getTime() % (60L * 60 * 1000)) / (5L * 60 * 1000));
+                            tstr = f.format(d) + "f" + idx;
+                            break;
                     }
                 }
 

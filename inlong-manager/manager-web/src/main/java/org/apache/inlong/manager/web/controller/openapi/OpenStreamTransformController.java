@@ -18,6 +18,7 @@
 package org.apache.inlong.manager.web.controller.openapi;
 
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
+import org.apache.inlong.manager.common.enums.OperationTarget;
 import org.apache.inlong.manager.common.enums.OperationType;
 import org.apache.inlong.manager.common.util.Preconditions;
 import org.apache.inlong.manager.common.validation.UpdateValidation;
@@ -58,35 +59,34 @@ public class OpenStreamTransformController {
             @RequestParam("inlongStreamId") String streamId) {
         Preconditions.expectNotBlank(groupId, ErrorCodeEnum.INVALID_PARAMETER, "groupId cannot be blank");
         Preconditions.expectNotNull(LoginUserUtils.getLoginUser(), ErrorCodeEnum.LOGIN_USER_EMPTY);
-        return Response.success(streamTransformService.listTransform(
-                groupId, streamId, LoginUserUtils.getLoginUser()));
+        return Response.success(streamTransformService.listTransform(groupId, streamId));
     }
 
     @RequestMapping(value = "/transform/save", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.CREATE)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.STREAM)
     @ApiOperation(value = "Save stream transform")
     public Response<Integer> save(@Validated @RequestBody TransformRequest request) {
         Preconditions.expectNotNull(request, ErrorCodeEnum.INVALID_PARAMETER, "request cannot be null");
         Preconditions.expectNotNull(LoginUserUtils.getLoginUser(), ErrorCodeEnum.LOGIN_USER_EMPTY);
         return Response.success(
-                streamTransformService.save(request, LoginUserUtils.getLoginUser()));
+                streamTransformService.save(request, LoginUserUtils.getLoginUser().getName()));
     }
 
     @RequestMapping(value = "/transform/update", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.UPDATE)
+    @OperationLog(operation = OperationType.UPDATE, operationTarget = OperationTarget.STREAM)
     @ApiOperation(value = "Update stream transform")
     public Response<Boolean> update(@Validated(UpdateValidation.class) @RequestBody TransformRequest request) {
         Preconditions.expectNotNull(request, ErrorCodeEnum.INVALID_PARAMETER, "request cannot be null");
         Preconditions.expectNotNull(LoginUserUtils.getLoginUser(), ErrorCodeEnum.LOGIN_USER_EMPTY);
-        return Response.success(streamTransformService.update(request, LoginUserUtils.getLoginUser()));
+        return Response.success(streamTransformService.update(request, LoginUserUtils.getLoginUser().getName()));
     }
 
     @RequestMapping(value = "/transform/delete", method = RequestMethod.DELETE)
-    @OperationLog(operation = OperationType.UPDATE)
+    @OperationLog(operation = OperationType.UPDATE, operationTarget = OperationTarget.STREAM)
     @ApiOperation(value = "Delete stream transform")
     public Response<Boolean> delete(@Validated DeleteTransformRequest request) {
         Preconditions.expectNotNull(request, ErrorCodeEnum.INVALID_PARAMETER, "request cannot be null");
         Preconditions.expectNotNull(LoginUserUtils.getLoginUser(), ErrorCodeEnum.LOGIN_USER_EMPTY);
-        return Response.success(streamTransformService.delete(request, LoginUserUtils.getLoginUser()));
+        return Response.success(streamTransformService.delete(request, LoginUserUtils.getLoginUser().getName()));
     }
 }

@@ -119,7 +119,19 @@ public class InlongStreamRequest extends BaseInlongStream {
     private Integer version;
 
     @ApiModelProperty(value = "Whether to ignore the parse errors of field value")
-    private boolean ignoreParseError = true;
+    private Boolean ignoreParseError;
+
+    @ApiModelProperty(value = "If use extended fields")
+    private Boolean useExtendedFields;
+
+    @ApiModelProperty(value = "Extended field size")
+    private Integer extendedFieldSize;
+
+    @ApiModelProperty("The multiple enable of sink")
+    private Boolean sinkMultipleEnable;
+
+    @ApiModelProperty("Whether to sync field")
+    private Boolean syncField = false;
 
     @ApiModelProperty(value = "The message body  wrap type, including: RAW, INLONG_MSG_V0, INLONG_MSG_V1, PB, etc")
     private String wrapType;

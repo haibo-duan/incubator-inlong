@@ -50,6 +50,9 @@ public class ClusterTagResponse {
     @ApiModelProperty(value = "Extended params")
     private String extParams;
 
+    @ApiModelProperty(value = "The compression type used for dataproxy and sort side data transmission to reduce the network IO overhead")
+    private String inlongCompressType;
+
     @ApiModelProperty(value = "Description of the cluster tag")
     private String description;
 
@@ -65,10 +68,10 @@ public class ClusterTagResponse {
     @ApiModelProperty(value = "Name of in modifier")
     private String modifier;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "GMT+8")
     private Date createTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "GMT+8")
     private Date modifyTime;
 
     @ApiModelProperty(value = "Version number")

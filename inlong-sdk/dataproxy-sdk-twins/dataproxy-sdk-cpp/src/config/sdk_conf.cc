@@ -18,6 +18,9 @@
  */
 
 #include "sdk_conf.h"
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
 #include <rapidjson/document.h>
 
 #include "../utils/capi_constant.h"
@@ -25,8 +28,10 @@
 #include "../utils/utils.h"
 
 namespace inlong {
-SdkConfig *SdkConfig::instance_ = new SdkConfig();
-SdkConfig *SdkConfig::getInstance() { return SdkConfig::instance_; }
+SdkConfig *SdkConfig::getInstance() {
+  static SdkConfig instance;
+  return &instance;
+}
 
 bool SdkConfig::ParseConfig(const std::string &config_path) {
   // Ensure the data consistency of each sdk instance
@@ -35,6 +40,9 @@ bool SdkConfig::ParseConfig(const std::string &config_path) {
   // Guaranteed to only parse the configuration file once
   if (!__sync_bool_compare_and_swap(&parsed_, false, true)) {
     LOG_INFO("ParseConfig has  parsed .");
+    if (++instance_num_ > max_instance_) {
+      return false;
+    }
     return true;
   }
 
@@ -62,6 +70,14 @@ bool SdkConfig::ParseConfig(const std::string &config_path) {
   InitLogParam(doc);
   InitManagerParam(doc);
   InitTcpParam(doc);
+
+  std::string err, local_ip;
+  if (GetLocalIPV4Address(err, local_ip)) {
+    local_ip_ = local_ip;
+  } else {
+    local_ip_ = constants::kSerIP;
+  }
+
   OthersParam(doc);
   InitAuthParm(doc);
 
@@ -78,11 +94,17 @@ void SdkConfig::defaultInit() {
   dispatch_interval_zip_ = constants::kDispatchIntervalZip;
   tcp_detection_interval_ = constants::kTcpDetectionInterval;
   tcp_idle_time_ = constants::kTcpIdleTime;
+  load_balance_interval_ = constants::kLoadBalanceInterval;
+  heart_beat_interval_ = constants::kHeartBeatInterval;
+  enable_balance_ = constants::kEnableBalance;
+  isolation_level_ = constants::IsolationLevel::kLevelSecond;
 
   // cache parameter
   send_buf_size_ = constants::kSendBufSize;
   recv_buf_size_ = constants::kRecvBufSize;
   max_msg_size_ = constants::kExtPackSize;
+  max_group_id_num_ = constants::kMaxGroupIdNum;
+  max_stream_id_num_ = constants::kMaxStreamIdNum;
 
   // Packaging parameters
   enable_pack_ = constants::kEnablePack;
@@ -99,11 +121,11 @@ void SdkConfig::defaultInit() {
 
   // manager parameters
   manager_url_ = constants::kManagerURL;
-  enable_manager_url_from_cluster_ = constants::kEnableManagerFromCluster;
-  manager_cluster_url_ = constants::kManagerClusterURL;
   manager_update_interval_ = constants::kManagerUpdateInterval;
   manager_url_timeout_ = constants::kManagerTimeout;
   max_proxy_num_ = constants::kMaxProxyNum;
+  reserve_proxy_num_ = constants::kReserveProxyNum;
+  enable_local_cache_ = constants::kEnableLocalCache;
 
   local_ip_ = constants::kSerIP;
   local_port_ = constants::kSerPort;
@@ -113,6 +135,11 @@ void SdkConfig::defaultInit() {
   enable_setaffinity_ = constants::kEnableSetAffinity;
   mask_cpu_affinity_ = constants::kMaskCPUAffinity;
   extend_field_ = constants::kExtendField;
+
+  need_auth_ = constants::kNeedAuth;
+  max_instance_ = constants::kMaxInstance;
+  instance_num_ = 1;
+  enable_share_msg_ = constants::kEnableShareMsg;
 }
 
 void SdkConfig::InitThreadParam(const rapidjson::Value &doc) {
@@ -141,6 +168,24 @@ void SdkConfig::InitThreadParam(const rapidjson::Value &doc) {
   } else {
     dispatch_interval_send_ = constants::kDispatchIntervalSend;
   }
+
+  if (doc.HasMember("load_balance_interval") &&
+      doc["load_balance_interval"].IsInt() &&
+      doc["load_balance_interval"].GetInt() > 0) {
+    const rapidjson::Value &obj = doc["load_balance_interval"];
+    load_balance_interval_ = obj.GetInt();
+  } else {
+    load_balance_interval_ = constants::kLoadBalanceInterval;
+  }
+
+  if (doc.HasMember("heart_beat_interval") &&
+      doc["heart_beat_interval"].IsInt() &&
+      doc["heart_beat_interval"].GetInt() > 0) {
+    const rapidjson::Value &obj = doc["heart_beat_interval"];
+    heart_beat_interval_ = obj.GetInt();
+  } else {
+    heart_beat_interval_ = constants::kHeartBeatInterval;
+  }
 }
 
 void SdkConfig::InitCacheParam(const rapidjson::Value &doc) {
@@ -158,6 +203,37 @@ void SdkConfig::InitCacheParam(const rapidjson::Value &doc) {
     send_buf_size_ = obj.GetInt();
   } else {
     send_buf_size_ = constants::kSendBufSize;
+  }
+
+  if (doc.HasMember("max_group_id_num") && doc["max_group_id_num"].IsInt() &&
+      doc["max_group_id_num"].GetInt() > 0) {
+    const rapidjson::Value &obj = doc["max_group_id_num"];
+    max_group_id_num_ = obj.GetInt();
+  } else {
+    max_group_id_num_ = constants::kMaxGroupIdNum;
+  }
+
+  if (doc.HasMember("max_stream_id_num") && doc["max_stream_id_num"].IsInt() &&
+      doc["max_stream_id_num"].GetInt() > 0) {
+    const rapidjson::Value &obj = doc["max_stream_id_num"];
+    max_stream_id_num_ = obj.GetInt();
+  } else {
+    max_stream_id_num_ = constants::kMaxGroupIdNum;
+  }
+
+  // max_cache_num
+  if (doc.HasMember("max_cache_num") && doc["max_cache_num"].IsInt() && doc["max_cache_num"].GetInt() >= 0) {
+    const rapidjson::Value &obj = doc["max_cache_num"];
+    max_cache_num_ = obj.GetInt();
+  } else {
+    max_cache_num_ = constants::kMaxCacheNum;
+  }
+
+  if (doc.HasMember("enable_share_msg") && doc["enable_share_msg"].IsBool()) {
+    const rapidjson::Value &obj = doc["enable_share_msg"];
+    enable_share_msg_ = obj.GetBool();
+  } else {
+    enable_share_msg_ = constants::kEnableShareMsg;
   }
 }
 
@@ -251,22 +327,7 @@ void SdkConfig::InitManagerParam(const rapidjson::Value &doc) {
   } else {
     manager_url_ = constants::kManagerURL;
   }
-  // manager cluster url
-  if (doc.HasMember("manager_cluster_url") &&
-      doc["manager_cluster_url"].IsString()) {
-    const rapidjson::Value &obj = doc["manager_cluster_url"];
-    manager_cluster_url_ = obj.GetString();
-  } else {
-    manager_cluster_url_ = constants::kManagerClusterURL;
-  }
-  // enable manager from cluster
-  if (doc.HasMember("enable_manager_url_from_cluster") &&
-      doc["enable_manager_url_from_cluster"].IsBool()) {
-    const rapidjson::Value &obj = doc["enable_manager_url_from_cluster"];
-    enable_manager_url_from_cluster_ = obj.GetBool();
-  } else {
-    enable_manager_url_from_cluster_ = constants::kEnableManagerFromCluster;
-  }
+
   // manager update interval
   if (doc.HasMember("manager_update_interval") &&
       doc["manager_update_interval"].IsInt() &&
@@ -307,6 +368,22 @@ void SdkConfig::InitManagerParam(const rapidjson::Value &doc) {
     std::string inlong_group_ids_str = obj.GetString();
     Utils::splitOperate(inlong_group_ids_str, inlong_group_ids_, ",");
   }
+
+  // enable local cache
+  if (doc.HasMember("enable_local_cache") && doc["enable_local_cache"].IsBool()) {
+    const rapidjson::Value &obj = doc["enable_local_cache"];
+    enable_local_cache_ = obj.GetBool();
+  } else {
+    enable_local_cache_ = constants::kEnableLocalCache;
+  }
+
+  // isolation level
+  if (doc.HasMember("isolation_level") && doc["isolation_level"].IsInt() && doc["isolation_level"].GetInt() > 0) {
+    const rapidjson::Value &obj = doc["isolation_level"];
+    isolation_level_ = obj.GetInt();
+  } else {
+    isolation_level_ = constants::IsolationLevel::kLevelSecond;
+  }
 }
 
 void SdkConfig::InitTcpParam(const rapidjson::Value &doc) {
@@ -334,6 +411,27 @@ void SdkConfig::InitTcpParam(const rapidjson::Value &doc) {
   } else {
     tcp_idle_time_ = constants::kTcpIdleTime;
   }
+
+  // enable balance
+  if (doc.HasMember("enable_balance") && doc["enable_balance"].IsBool()) {
+    const rapidjson::Value &obj = doc["enable_balance"];
+    enable_balance_ = obj.GetBool();
+  } else {
+    enable_balance_ = constants::kEnableBalance;
+  }
+
+  if (doc.HasMember("retry_times") && doc["retry_times"].IsInt() && doc["retry_times"].GetInt() > 0) {
+    const rapidjson::Value &obj = doc["retry_times"];
+    retry_times_ = obj.GetInt();
+  } else {
+    retry_times_ = constants::kRetryTimes;
+  }
+  if (doc.HasMember("proxy_repeat_times") && doc["proxy_repeat_times"].IsInt() && doc["proxy_repeat_times"].GetInt() >= 0) {
+    const rapidjson::Value &obj = doc["proxy_repeat_times"];
+    proxy_repeat_times_ = obj.GetInt();
+  } else {
+    proxy_repeat_times_ = constants::kProxyRepeatTimes;
+  }
 }
 void SdkConfig::InitAuthParm(const rapidjson::Value &doc) {
   // auth settings
@@ -354,17 +452,16 @@ void SdkConfig::InitAuthParm(const rapidjson::Value &doc) {
   } else {
     need_auth_ = constants::kNeedAuth;
     LOG_INFO("need_auth is not expect, then use default:%s" << need_auth_
-                 ? "true"
-                 : "false");
+             ? "true"
+             : "false");
   }
+
 }
 void SdkConfig::OthersParam(const rapidjson::Value &doc) {
   // ser_ip
   if (doc.HasMember("ser_ip") && doc["ser_ip"].IsString()) {
     const rapidjson::Value &obj = doc["ser_ip"];
     local_ip_ = obj.GetString();
-  } else {
-    local_ip_ = constants::kSerIP;
   }
   // ser_port
   if (doc.HasMember("ser_port") && doc["ser_port"].IsInt() &&
@@ -400,6 +497,69 @@ void SdkConfig::OthersParam(const rapidjson::Value &doc) {
   } else {
     extend_field_ = constants::kExtendField;
   }
+
+  // instance num
+  if (doc.HasMember("max_instance") && doc["max_instance"].IsInt() && doc["max_instance"].GetInt() > 0) {
+    const rapidjson::Value &obj = doc["max_instance"];
+    max_instance_ = obj.GetInt();
+  } else {
+    max_instance_ = constants::kMaxInstance;
+  }
+
+  if (doc.HasMember("extend_report") && doc["extend_report"].IsBool()) {
+    const rapidjson::Value &obj = doc["extend_report"];
+    extend_report_ = obj.GetBool();
+  } else {
+    extend_report_ = constants::kExtendReport;
+  }
+}
+
+bool SdkConfig::GetLocalIPV4Address(std::string &err_info, std::string &localhost) {
+  int32_t sockfd;
+  int32_t ip_num = 0;
+  char buf[1024] = {0};
+  struct ifreq *ifreq;
+  struct ifreq if_flag;
+  struct ifconf ifconf;
+
+  ifconf.ifc_len = sizeof(buf);
+  ifconf.ifc_buf = buf;
+  if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    err_info = "Open the local socket(AF_INET, SOCK_DGRAM) failure!";
+    return false;
+  }
+
+  ioctl(sockfd, SIOCGIFCONF, &ifconf);
+  ifreq = (struct ifreq *) buf;
+  ip_num = ifconf.ifc_len / sizeof(struct ifreq);
+  for (int32_t i = 0; i < ip_num; i++, ifreq++) {
+    if (ifreq->ifr_flags != AF_INET) {
+      continue;
+    }
+    if (0 == strncmp(&ifreq->ifr_name[0], "lo", sizeof("lo"))) {
+      continue;
+    }
+    memcpy(&if_flag.ifr_name[0], &ifreq->ifr_name[0], sizeof(ifreq->ifr_name));
+    if ((ioctl(sockfd, SIOCGIFFLAGS, (char *) &if_flag)) < 0) {
+      continue;
+    }
+    if ((if_flag.ifr_flags & IFF_LOOPBACK)
+        || !(if_flag.ifr_flags & IFF_UP)) {
+      continue;
+    }
+
+    if (!strncmp(inet_ntoa(((struct sockaddr_in *) &(ifreq->ifr_addr))->sin_addr),
+                 "127.0.0.1", 7)) {
+      continue;
+    }
+    localhost = inet_ntoa(((struct sockaddr_in *) &(ifreq->ifr_addr))->sin_addr);
+    close(sockfd);
+    err_info = "Ok";
+    return true;
+  }
+  close(sockfd);
+  err_info = "Not found the localHost in local OS";
+  return false;
 }
 
 void SdkConfig::ShowClientConfig() {
@@ -419,11 +579,6 @@ void SdkConfig::ShowClientConfig() {
   LOG_INFO("log_level: " << log_level_);
   LOG_INFO("log_path: " << log_path_.c_str());
   LOG_INFO("manager_url: " << manager_url_.c_str());
-  LOG_INFO("manager_cluster_url: " << manager_cluster_url_.c_str());
-  LOG_INFO(
-      "enable_manager_url_from_cluster: " << enable_manager_url_from_cluster_
-          ? "true"
-          : "false");
   LOG_INFO("manager_update_interval:  minutes" << manager_update_interval_);
   LOG_INFO("manager_url_timeout: " << manager_url_timeout_);
   LOG_INFO("max_tcp_num: " << max_proxy_num_);
@@ -440,6 +595,11 @@ void SdkConfig::ShowClientConfig() {
   LOG_INFO("need_auth: " << need_auth_ ? "true" : "false");
   LOG_INFO("auth_id: " << auth_id_.c_str());
   LOG_INFO("auth_key: " << auth_key_.c_str());
+  LOG_INFO("max_group_id_num: " << max_group_id_num_);
+  LOG_INFO("max_stream_id_num: " << max_stream_id_num_);
+  LOG_INFO("isolation_level: " << isolation_level_);
+  LOG_INFO("max_instance: " << max_instance_);
+  LOG_INFO("max_cache_num: " << max_cache_num_);
 }
 
 } // namespace inlong

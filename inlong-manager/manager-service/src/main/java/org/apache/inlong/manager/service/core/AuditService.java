@@ -17,9 +17,10 @@
 
 package org.apache.inlong.manager.service.core;
 
+import org.apache.inlong.audit.entity.AuditInformation;
+import org.apache.inlong.audit.entity.AuditProxy;
+import org.apache.inlong.common.enums.IndicatorType;
 import org.apache.inlong.manager.pojo.audit.AuditRequest;
-import org.apache.inlong.manager.pojo.audit.AuditSourceRequest;
-import org.apache.inlong.manager.pojo.audit.AuditSourceResponse;
 import org.apache.inlong.manager.pojo.audit.AuditVO;
 
 import java.util.List;
@@ -38,13 +39,23 @@ public interface AuditService {
     List<AuditVO> listByCondition(AuditRequest request) throws Exception;
 
     /**
-     * Get audit id by type and isSent.
+     * Query audit data for list by condition
+     *
+     * @param request The audit request of query condition
+     * @return The result of query
+     */
+    List<AuditVO> listAll(AuditRequest request) throws Exception;
+
+    List<AuditInformation> getAuditBases(Boolean isMetric);
+
+    /**
+     * Get audit id by type and indicator type.
      *
      * @param type audit type.
-     * @param isSent Whether to receive or send
+     * @param indicatorType indicator type
      * @return Audit id.
      */
-    String getAuditId(String type, boolean isSent);
+    String getAuditId(String type, IndicatorType indicatorType);
 
     /**
      * Refresh the base item of audit cache.
@@ -54,20 +65,10 @@ public interface AuditService {
     Boolean refreshBaseItemCache();
 
     /**
-     * Offline the old audit source through url, and insert and online a new audit source.
-     * If the new url already exists in the table, the insert operation will become an update operation.
+     * Get audit proxy url by component
      *
-     * @param operator current operator
-     * @param request audit source request
-     * @return audit source id after updating or saving
+     * @return audit proxy list
      */
-    Integer updateAuditSource(AuditSourceRequest request, String operator);
-
-    /**
-     * Get audit source that is online.
-     *
-     * @return audit source response.
-     */
-    AuditSourceResponse getAuditSource();
+    List<AuditProxy> getAuditProxy(String component) throws Exception;
 
 }

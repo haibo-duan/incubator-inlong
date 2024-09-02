@@ -21,6 +21,7 @@ import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
 import org.apache.inlong.manager.common.util.CommonBeanUtils;
 import org.apache.inlong.manager.common.util.JsonUtils;
+import org.apache.inlong.manager.pojo.sink.BaseStreamSink;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -38,7 +39,7 @@ import javax.validation.constraints.NotNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ClsSinkDTO {
+public class ClsSinkDTO extends BaseStreamSink {
 
     @ApiModelProperty("Cloud log service topic id")
     private String topicId;
@@ -46,14 +47,23 @@ public class ClsSinkDTO {
     @ApiModelProperty("Cloud log service topic name")
     private String topicName;
 
-    @ApiModelProperty("Cloud log service topic save time")
-    private Integer saveTime;
+    @ApiModelProperty("Cloud log service topic storage duration")
+    private Integer storageDuration;
 
     @ApiModelProperty("Cloud log service tag name")
     private String tag;
 
     @ApiModelProperty("Cloud log service index tokenizer")
     private String tokenizer;
+
+    @ApiModelProperty("contentOffset")
+    private Integer contentOffset = 0;
+
+    @ApiModelProperty("fieldOffset")
+    private Integer fieldOffset;
+
+    @ApiModelProperty("separator")
+    private String separator;
 
     /**
      * Get the dto instance from the request

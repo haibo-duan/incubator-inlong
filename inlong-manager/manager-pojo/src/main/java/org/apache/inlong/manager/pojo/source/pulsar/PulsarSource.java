@@ -73,6 +73,9 @@ public class PulsarSource extends StreamSource {
     @ApiModelProperty(value = "Data separator")
     private String dataSeparator;
 
+    @ApiModelProperty(value = "KV separator")
+    private String kvSeparator;
+
     @ApiModelProperty(value = "Data field escape symbol")
     private String dataEscapeChar;
 
@@ -87,6 +90,15 @@ public class PulsarSource extends StreamSource {
     @ApiModelProperty(value = "The message body wrap  wrap type, including: RAW, INLONG_MSG_V0, INLONG_MSG_V1, etc")
     @Builder.Default
     private String wrapType = MessageWrapType.INLONG_MSG_V0.getName();
+
+    @ApiModelProperty(value = "Client auth plugin class name")
+    private String clientAuthPluginClassName;
+
+    @ApiModelProperty(value = "Client auth params")
+    private String clientAuthParams;
+
+    @ApiModelProperty("Reset subscription time")
+    private Long resetTime;
 
     public PulsarSource() {
         this.setSourceType(SourceType.PULSAR);

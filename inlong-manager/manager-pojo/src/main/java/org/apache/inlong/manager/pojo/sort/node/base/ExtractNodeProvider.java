@@ -19,6 +19,7 @@ package org.apache.inlong.manager.pojo.sort.node.base;
 
 import org.apache.inlong.common.enums.DataTypeEnum;
 import org.apache.inlong.common.enums.MessageWrapType;
+import org.apache.inlong.common.util.StringUtil;
 import org.apache.inlong.manager.common.fieldtype.strategy.FieldTypeMappingStrategy;
 import org.apache.inlong.manager.pojo.sort.util.FieldInfoUtils;
 import org.apache.inlong.manager.pojo.stream.StreamField;
@@ -32,9 +33,10 @@ import org.apache.inlong.sort.protocol.node.format.DebeziumJsonFormat;
 import org.apache.inlong.sort.protocol.node.format.Format;
 import org.apache.inlong.sort.protocol.node.format.InLongMsgFormat;
 import org.apache.inlong.sort.protocol.node.format.JsonFormat;
+import org.apache.inlong.sort.protocol.node.format.KvFormat;
 import org.apache.inlong.sort.protocol.node.format.RawFormat;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -75,6 +77,9 @@ public interface ExtractNodeProvider extends NodeProvider {
      */
     default List<FieldInfo> parseStreamFieldInfos(List<StreamField> streamFields, String nodeId,
             FieldTypeMappingStrategy fieldTypeMappingStrategy) {
+        if (CollectionUtils.isEmpty(streamFields)) {
+            return null;
+        }
         // Filter constant fields
         return streamFields.stream().filter(s -> Objects.isNull(s.getFieldValue()))
                 .map(streamFieldInfo -> FieldInfoUtils
@@ -86,8 +91,10 @@ public interface ExtractNodeProvider extends NodeProvider {
      * Parse format
      *
      * @param serializationType data serialization, support: csv, json, canal, avro, etc
-     * @param wrapWithInlongMsg whether wrap content with {@link InLongMsgFormat}
+     * @param wrapType whether wrap content with {@link InLongMsgFormat}
      * @param separatorStr the separator of data content
+     * @param kvSeparatorStr the kv separator
+     * @param escapeCharStr the escape char
      * @param ignoreParseErrors whether ignore deserialization error data
      * @return the format for serialized content
      */
@@ -95,15 +102,14 @@ public interface ExtractNodeProvider extends NodeProvider {
             String serializationType,
             String wrapType,
             String separatorStr,
-            boolean ignoreParseErrors) {
+            String kvSeparatorStr,
+            String escapeCharStr,
+            Boolean ignoreParseErrors) {
         Format format;
         DataTypeEnum dataType = DataTypeEnum.forType(serializationType);
         switch (dataType) {
             case CSV:
-                if (StringUtils.isNumeric(separatorStr)) {
-                    char dataSeparator = (char) Integer.parseInt(separatorStr);
-                    separatorStr = Character.toString(dataSeparator);
-                }
+                separatorStr = StringUtil.parseChar(separatorStr);
                 CsvFormat csvFormat = new CsvFormat(separatorStr);
                 csvFormat.setIgnoreParseErrors(ignoreParseErrors);
                 format = csvFormat;
@@ -126,6 +132,12 @@ public interface ExtractNodeProvider extends NodeProvider {
                 break;
             case RAW:
                 format = new RawFormat();
+                break;
+            case KV:
+                separatorStr = StringUtil.parseChar(separatorStr);
+                kvSeparatorStr = StringUtil.parseChar(kvSeparatorStr);
+                escapeCharStr = StringUtil.parseChar(escapeCharStr);
+                format = new KvFormat(separatorStr, kvSeparatorStr, escapeCharStr, ignoreParseErrors, null, null, null);
                 break;
             default:
                 throw new IllegalArgumentException(String.format("Unsupported dataType=%s", dataType));

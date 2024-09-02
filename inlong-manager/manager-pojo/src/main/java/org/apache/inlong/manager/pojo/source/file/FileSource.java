@@ -80,6 +80,12 @@ public class FileSource extends StreamSource {
     @ApiModelProperty("Cycle unit")
     private String cycleUnit;
 
+    @ApiModelProperty("Max file count")
+    private String maxFileCount;
+
+    @ApiModelProperty("Time zone")
+    private String timeZone;
+
     @ApiModelProperty("Whether retry")
     private Boolean retry;
 
@@ -88,9 +94,6 @@ public class FileSource extends StreamSource {
 
     @ApiModelProperty("End time")
     private Long endTime;
-
-    @ApiModelProperty("Metadata filters by label, special parameters for K8S")
-    private Map<String, String> filterMetaByLabels;
 
     public FileSource() {
         this.setSourceType(SourceType.FILE);

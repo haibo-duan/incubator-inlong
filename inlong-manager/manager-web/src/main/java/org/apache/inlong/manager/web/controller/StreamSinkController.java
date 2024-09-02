@@ -17,9 +17,11 @@
 
 package org.apache.inlong.manager.web.controller;
 
+import org.apache.inlong.manager.common.enums.OperationTarget;
 import org.apache.inlong.manager.common.enums.OperationType;
 import org.apache.inlong.manager.common.validation.UpdateByIdValidation;
 import org.apache.inlong.manager.common.validation.UpdateByKeyValidation;
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.common.UpdateResult;
@@ -46,6 +48,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Stream sink control layer
@@ -59,17 +62,25 @@ public class StreamSinkController {
     private StreamSinkService sinkService;
 
     @RequestMapping(value = "/sink/save", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.CREATE)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.SINK)
     @ApiOperation(value = "Save stream sink")
     public Response<Integer> save(@Validated @RequestBody SinkRequest request) {
         return Response.success(sinkService.save(request, LoginUserUtils.getLoginUser().getName()));
     }
 
+    @RequestMapping(value = "/sink/batchSave", method = RequestMethod.POST)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.SINK)
+    @ApiOperation(value = "Batch save stream sink")
+    public Response<List<BatchResult>> batchSave(@Validated @RequestBody List<SinkRequest> requestList) {
+        return Response.success(sinkService.batchSave(requestList, LoginUserUtils.getLoginUser().getName()));
+    }
+
     @RequestMapping(value = "/sink/get/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get stream sink")
+    @OperationLog(operation = OperationType.GET, operationTarget = OperationTarget.SINK)
     @ApiImplicitParam(name = "id", dataTypeClass = Integer.class, required = true)
     public Response<StreamSink> get(@PathVariable Integer id) {
-        return Response.success(sinkService.get(id, LoginUserUtils.getLoginUser()));
+        return Response.success(sinkService.get(id));
     }
 
     @RequestMapping(value = "/sink/list", method = RequestMethod.POST)
@@ -78,15 +89,21 @@ public class StreamSinkController {
         return Response.success(sinkService.listByCondition(request, LoginUserUtils.getLoginUser().getName()));
     }
 
+    @RequestMapping(value = "/sink/listDetail", method = RequestMethod.POST)
+    @ApiOperation(value = "List stream sinks detail by paginating")
+    public Response<PageResult<Map<String, Object>>> listDetail(@RequestBody SinkPageRequest request) {
+        return Response.success(sinkService.listDetail(request, LoginUserUtils.getLoginUser().getName()));
+    }
+
     @RequestMapping(value = "/sink/update", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.UPDATE)
+    @OperationLog(operation = OperationType.UPDATE, operationTarget = OperationTarget.SINK)
     @ApiOperation(value = "Update stream sink")
     public Response<Boolean> update(@Validated(UpdateByIdValidation.class) @RequestBody SinkRequest request) {
         return Response.success(sinkService.update(request, LoginUserUtils.getLoginUser().getName()));
     }
 
     @RequestMapping(value = "/sink/updateByKey", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.UPDATE)
+    @OperationLog(operation = OperationType.UPDATE, operationTarget = OperationTarget.SINK)
     @ApiOperation(value = "Update stream sink by key")
     public Response<UpdateResult> updateByKey(
             @Validated(UpdateByKeyValidation.class) @RequestBody SinkRequest request) {
@@ -94,7 +111,7 @@ public class StreamSinkController {
     }
 
     @RequestMapping(value = "/sink/delete/{id}", method = RequestMethod.DELETE)
-    @OperationLog(operation = OperationType.DELETE)
+    @OperationLog(operation = OperationType.DELETE, operationTarget = OperationTarget.SINK)
     @ApiOperation(value = "Delete stream sink")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "startProcess", dataTypeClass = boolean.class),
@@ -106,7 +123,7 @@ public class StreamSinkController {
     }
 
     @RequestMapping(value = "/sink/deleteByKey", method = RequestMethod.DELETE)
-    @OperationLog(operation = OperationType.DELETE)
+    @OperationLog(operation = OperationType.DELETE, operationTarget = OperationTarget.SINK)
     @ApiOperation(value = "Delete stream sink by key")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "startProcess", dataTypeClass = boolean.class),

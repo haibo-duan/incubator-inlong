@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.inlong</groupId>
         <artifactId>inlong</artifactId>
-        <version>1.10.0-SNAPSHOT</version>
+        <version>1.14.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>inlong-sort</artifactId>
@@ -142,7 +142,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
+                <version>${plugin.deploy.version}</version>
             </plugin>
 
             <plugin>
@@ -163,9 +163,6 @@
     <profiles>
         <profile>
             <id>v1.13</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <!-- End-To-End after refactoring, you need to mention this module under modules. -->
             <properties>
                 <sort.flink.version>v1.13</sort.flink.version>
@@ -183,6 +180,9 @@
         </profile>
         <profile>
             <id>v1.15</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <properties>
                 <sort.flink.version>v1.15</sort.flink.version>
                 <flink.version>1.15.4</flink.version>
@@ -195,6 +195,16 @@
                 <flink.test.utils.artifactId>flink-test-utils</flink.test.utils.artifactId>
                 <flink.runtime.artifactId>flink-runtime</flink.runtime.artifactId>
                 <flink.docker.image.name>flink:1.15.4-scala_2.12</flink.docker.image.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>v1.18</id>
+            <properties>
+                <sort.flink.version>v1.18</sort.flink.version>
+                <flink.version>1.18.1</flink.version>
+                <flink.minor.version>1.18</flink.minor.version>
+                <flink.scala.binary.version>2.12</flink.scala.binary.version>
+                <flink.test.utils.artifactId>flink-test-utils</flink.test.utils.artifactId>
             </properties>
         </profile>
     </profiles>

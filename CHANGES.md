@@ -22,254 +22,326 @@
 # of release header or remove the below marker. This file is generated.
 # DO NOT REMOVE THIS MARKER; FOR INTERPOLATING CHANGES!-->
 
-# Release InLong 1.9.0 - Released (as of 2023-09-18)
+# Release InLong 1.13.0 - Released (as of 2024-07-18)
 ### Agent
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-8850](https://github.com/apache/inlong/issues/8850) | [Improve][Agent] Remove unregister of MetricRegister when taskmanager is initialized                                            |
-| [INLONG-8655](https://github.com/apache/inlong/issues/8655) | [Bug][Agent] JobWrapper thread leaks when the job is stopped                                                                    |
-| [INLONG-8652](https://github.com/apache/inlong/issues/8652) | [Improve][Agent] Delete the capacity of setting blacklist                                                                       |
-| [INLONG-8649](https://github.com/apache/inlong/issues/8649) | [Bug][Agent] Thread leaks for ProxySink when the DataProxy SDK init failed                                                      |
-| [INLONG-8647](https://github.com/apache/inlong/issues/8647) | [Improve][Agent] Stop sending task snapshot to Manager module                                                                   |
-| [INLONG-8645](https://github.com/apache/inlong/issues/8645) | [Improve][Agent] Delete the capacity of the loading trigger for local files                                                     |
-| [INLONG-8629](https://github.com/apache/inlong/issues/8629) | [Bug][Agent] Sending invalid data to DataProxy failed blocks normal data sending                                                |
-| [INLONG-8524](https://github.com/apache/inlong/issues/8524) | [Improve][Agent] Update the JVM Options for Agent                                                                               |
-| [INLONG-8520](https://github.com/apache/inlong/issues/8520) | [Bug][Agent] File agent sent data to dataproxy was all json formatted 1.9.x/bugfix                                              |
-| [INLONG-8146](https://github.com/apache/inlong/issues/8146) | [Improve][Agent] Optimize agent-env.sh, and '-XX:NativeMemoryTracking'                                                          |
-| [INLONG-8799](https://github.com/apache/inlong/issues/8799) | [Bug][Manager][Agent][DataProxy] The "opentelemetry" related configs may affect the startup of services                         |
-| [INLONG-8611](https://github.com/apache/inlong/issues/8611) | [Feature][Manager][Agent][DataProxy] Support full link tracking to improve the observability of the project                     |
-                                                                                                                                                                                                
-### Audit
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-8836](https://github.com/apache/inlong/issues/8836) | [Improve][Audit] Add audit_tag information to distinguish data sources and data targets                                         |
-| [INLONG-8753](https://github.com/apache/inlong/issues/8753) | [Improve][Audit] Separate commons-text from org.apache.flume                                                                    |
-| [INLONG-8699](https://github.com/apache/inlong/issues/8699) | [Improve][Audit] Optimize the service log of audit-proxy                                                                        |
-| [INLONG-8642](https://github.com/apache/inlong/issues/8642) | [Improve][Audit] Remove the audit commons-text dependency                                                                       |
+| <div style="width:150px">ISSUE</div>                          | <div style="width:950px">Summary</div>                                                                                                                                               |
+|:--------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [INLONG-10094](https://github.com/apache/inlong/issues/10094) |[Improve][Agent] The task record for data supplementation has not expired|
+| [INLONG-10107](https://github.com/apache/inlong/issues/10107) |[Improve][Agent] There is a bug in updating the module configuration|
+| [INLONG-10113](https://github.com/apache/inlong/issues/10113) |[Improve][Agent] Delete useless code|
+| [INLONG-10115](https://github.com/apache/inlong/issues/10115) |[Improve][Agent] Offset needs to be changed to save in string format because some data sources have non integer positions|
+| [INLONG-10187](https://github.com/apache/inlong/issues/10187) |[Improve][Agent] Need to handle situations where timeoffset is empty, default to no offset|
+| [INLONG-10189](https://github.com/apache/inlong/issues/10189) |[Improve][Agent] There is a risk of agent getting stuck after SDK initialization exception|
+| [INLONG-10191](https://github.com/apache/inlong/issues/10191) |[Improve][Agent] Delete useless code|
+| [INLONG-10210](https://github.com/apache/inlong/issues/10210) |[Improve][Agent] The installer needs to add a script for environment initialization|
+| [INLONG-10268](https://github.com/apache/inlong/issues/10268) |[Improve][Agent] Suggest not using task ID as the data version|
+| [INLONG-10281](https://github.com/apache/inlong/issues/10281) |[Improve][Agent] Real time collection of files with audit data errors|
+| [INLONG-10298](https://github.com/apache/inlong/issues/10298) |[Improve][Agent] The command related code is no longer useful, it is recommended to delete it|
+| [INLONG-10302](https://github.com/apache/inlong/issues/10302) |[Improve][Agent] The Task base class needs to add an interface that limits the number of instances obtained|
+| [INLONG-10318](https://github.com/apache/inlong/issues/10318) |[Feature][Agent] Add PostgreSQL data source for Agent|
+| [INLONG-10319](https://github.com/apache/inlong/issues/10319) |[Improve][Agent] Agent should get audit id from audit sdk|
+| [INLONG-10384](https://github.com/apache/inlong/issues/10384) |[Improve][Agent] Add functions to the Store interface to extend new storage plugins|
+| [INLONG-10399](https://github.com/apache/inlong/issues/10399) |[Improve][Agent] Add global configurations updater|
+| [INLONG-10410](https://github.com/apache/inlong/issues/10410) |[Improve][Agent] Add ZK plugin to save offset info|
+| [INLONG-10443](https://github.com/apache/inlong/issues/10443) |[Improve][Agent] Put Rocksdb into the plugins module|
+| [INLONG-10446](https://github.com/apache/inlong/issues/10446) |[Improve][Agent] Adjusting audit SDK address settings|
+| [INLONG-10476](https://github.com/apache/inlong/issues/10476) |[Improve][Agent] The audit address should only be obtained from the manager|
+| [INLONG-10535](https://github.com/apache/inlong/issues/10535) |[Improve][Agent] Support minute level tasks|
+| [INLONG-10542](https://github.com/apache/inlong/issues/10542) |[Improve][Agent] Remove the deleted watch directions|
+| [INLONG-10547](https://github.com/apache/inlong/issues/10547) |[Improve][Agent] Provide a clear prompt after the mq type is incorrect|
+| [INLONG-10564](https://github.com/apache/inlong/issues/10564) |[Improve][Agent] Request configuration with md5 included|
+| [INLONG-10598](https://github.com/apache/inlong/issues/10598) |[Improve][Agent] Delete excess unit tests|
+| [INLONG-10611](https://github.com/apache/inlong/issues/10611) |[Improve][Agent] Update configuration only when the version number is increased|
+| [INLONG-10633](https://github.com/apache/inlong/issues/10633) |[Improve][Agent] The initialization function of AuditUtils needs to pass in the configuration|
+| [INLONG-10645](https://github.com/apache/inlong/issues/10645) |[Improve][Agent] Installer needs to add process protection|
+| [INLONG-10650](https://github.com/apache/inlong/issues/10650) |[Improve][Agent] When the installer updates the configuration, it is necessary to first determine the version|
 
 ### Dashboard
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-8882](https://github.com/apache/inlong/issues/8882) | [Feature][Dashboard] Support management of Pulsar data node                                                                     |
-| [INLONG-8881](https://github.com/apache/inlong/issues/8881) | [Feature][Dashboard] Support management of Pulsar sink                                                                          |
-| [INLONG-8843](https://github.com/apache/inlong/issues/8843) | [Improve][Dashboard] StarRocks sink field optimization                                                                          |
-| [INLONG-8841](https://github.com/apache/inlong/issues/8841) | [Feature][Dashboard] Support management of Iceberg sources                                                                      |
-| [INLONG-8810](https://github.com/apache/inlong/issues/8810) | [Improve][Dashboard] Approval management process ID link optimization                                                           |
-| [INLONG-8800](https://github.com/apache/inlong/issues/8800) | [Improve][Dashboard] Owners search component optimization                                                                       |
-| [INLONG-8788](https://github.com/apache/inlong/issues/8788) | [Improve][Dashboard] Data synchronization page optimization                                                                     |
-| [INLONG-8779](https://github.com/apache/inlong/issues/8779) | [Improve][Dashboard] Modify password verification optimization                                                                  |
-| [INLONG-8760](https://github.com/apache/inlong/issues/8760) | [Bug][Dashboard] The transform button was not at the center                                                                     |
-| [INLONG-8757](https://github.com/apache/inlong/issues/8757) | [Improve][Dashboard] Implement buttons using a link  good first issue                                                           |
-| [INLONG-8755](https://github.com/apache/inlong/issues/8755) | [Improve][Dashboard] Data synchronization field mapping optimization                                                            |
-| [INLONG-8727](https://github.com/apache/inlong/issues/8727) | [Improve][Dashboard] Approval management Application details optimization                                                       |
-| [INLONG-8705](https://github.com/apache/inlong/issues/8705) | [Improve][Dashboard] Source and sink title optimization                                                                         |
-| [INLONG-8693](https://github.com/apache/inlong/issues/8693) | [Feature][Dashboard] Data synchronization supports Audit                                                                        |
-| [INLONG-8661](https://github.com/apache/inlong/issues/8661) | [Bug][DashBoard] DatabaseWhiteList is required which is inconsistent with tips                                                  |
-| [INLONG-8624](https://github.com/apache/inlong/issues/8624) | [Bug][Dashboard] Tenant Management Search Tenant Exceptions                                                                     |
-| [INLONG-8621](https://github.com/apache/inlong/issues/8621) | [Feature][Dashboard] Approval management supports approval data synchronization                                                 |
-| [INLONG-8575](https://github.com/apache/inlong/issues/8575) | [Improve][Dashboard] Tenant management query optimization                                                                       |
-| [INLONG-8560](https://github.com/apache/inlong/issues/8560) | [Bug][Dashboard] No username and password when configuring hive.                                                                |
-| [INLONG-8548](https://github.com/apache/inlong/issues/8548) | [Feature][Dashboard] Data access supports displaying transmission delay                                                         |
-| [INLONG-8546](https://github.com/apache/inlong/issues/8546) | [Bug][Dashboard] Inlong group resource details display error good first issue                                                   |
-| [INLONG-8512](https://github.com/apache/inlong/issues/8512) | [Bug][Dashboard] Create tube consumer failed when selecting topic 1.9.x/bugfix                                                  |
-| [INLONG-8502](https://github.com/apache/inlong/issues/8502) | [Bug][Dashboard] Query data preview interface exception                                                                         |
-| [INLONG-8500](https://github.com/apache/inlong/issues/8500) | [Bug][Dashboard] Fix stream data preview url error                                                                              |
-| [INLONG-8008](https://github.com/apache/inlong/issues/8008) | [Improve][Dashboard] Add default icon for different data nodes good first issue                                                 |
+| <div style="width:150px">ISSUE</div>                          | <div style="width:950px">Summary</div>                                               |
+|:--------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [INLONG-10179](https://github.com/apache/inlong/issues/10179) |[Bug][Dashboard] There are redundant All types in cluster management|
+| [INLONG-10226](https://github.com/apache/inlong/issues/10226) |[Bug][Dashboard] Audit items cannot be searched|
+| [INLONG-10256](https://github.com/apache/inlong/issues/10256) |[Improve][DashBoard]  Modify the data source IP item of the file data source form in the data access module|
+| [INLONG-10314](https://github.com/apache/inlong/issues/10314) |[Improve][DashBoard]  Add an operation time to the operation log table|
+| [INLONG-10347](https://github.com/apache/inlong/issues/10347) |[Improve][Dashboard] Add Agent IP field to PostgreSQL data source|
+| [INLONG-10350](https://github.com/apache/inlong/issues/10350) |[Bug][Dashboard] Audit item search failed|
+| [INLONG-10377](https://github.com/apache/inlong/issues/10377) |[Improve][DashBoard] add Source Data Field Template|
+| [INLONG-10394](https://github.com/apache/inlong/issues/10394) |[Improve][DashBoard] Agent page modifies the version and sets the default values for the commands|
+| [INLONG-10409](https://github.com/apache/inlong/issues/10409) |[Feature][Dashboard] Support installing agents by SSH key-based authentication|
+| [INLONG-10417](https://github.com/apache/inlong/issues/10417) |[Bug][Dashboard] There is an issue with the MODE display on the approval screen, and data synchronization is not displayed|
+| [INLONG-10419](https://github.com/apache/inlong/issues/10419) |[Feature][Dashboard] Automatically switch tenants when opening a page with groupId|
+| [INLONG-10449](https://github.com/apache/inlong/issues/10449) |[Bug][Dashboard] The field template for selecting a new data flow does not take effect|
+| [INLONG-10468](https://github.com/apache/inlong/issues/10468) |[Feature][Dashboard] Audit data showing totals and variances|
+| [INLONG-10500](https://github.com/apache/inlong/issues/10500) |[Improve][Dashboard] When you edit tenants in a template, you need to change the scope to hide them|
+| [INLONG-10501](https://github.com/apache/inlong/issues/10501) |[Improve][Dashboard] Modify component type to be more intuitive|
+| [INLONG-10504](https://github.com/apache/inlong/issues/10504) |[Improve][Dashboard] Added details button to tag management|
+| [INLONG-10584](https://github.com/apache/inlong/issues/10584) |[Improve][Dashboard] New cluster type adds sortkafka types|
+| [INLONG-10592](https://github.com/apache/inlong/issues/10592) |[Improve][Dashboard] When there are too many selections in the drop-down box, omit some of them|
+| [INLONG-10614](https://github.com/apache/inlong/issues/10614) |[Improve][Dashboard] The template list does not need to display Id|
+| [INLONG-10617](https://github.com/apache/inlong/issues/10617) |[Improve][Dashboard] The mq type should not exist on the data synchronization page|
+| [INLONG-10620](https://github.com/apache/inlong/issues/10620) |[Bug][Dashboard] Page error occurs wrong|
+| [INLONG-10640](https://github.com/apache/inlong/issues/10640) |[Improve][Dashboard]  Approval page display item modification|
+| [INLONG-10651](https://github.com/apache/inlong/issues/10651) |[Improve][Dashboard] File Type data stream supports minute-level periods|
+| [INLONG-10681](https://github.com/apache/inlong/issues/10681) |[Bug][Dashboard] There is a nesting problem in moduleIdList|
+| [INLONG-10691](https://github.com/apache/inlong/issues/10691) |[Improve][Dashboard] Added monitoring and auditing page|
+
+### Tube
+| <div style="width:150px">ISSUE</div>                          | <div style="width:950px">Summary</div>                                               |
+|:--------------------------------------------------------------|:-------------------------------------------------------------------------------------|
+| [INLONG-10126](https://github.com/apache/inlong/issues/10126) |[Bug][tubemq-server] Maven sleepycat je.version 7.3.7 can not found in maven repository|
 
 ### DataProxy
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-8914](https://github.com/apache/inlong/issues/8914) | [Improve][DataProxy] Optimize DataProxy event statistics                                                                        |
-| [INLONG-8899](https://github.com/apache/inlong/issues/8899) | [Improve][DataProxy] Optimize metadata update logic                                                                             |
-| [INLONG-8819](https://github.com/apache/inlong/issues/8819) | [Improve][DataProxy] Optimize ConfigHolder related subclass loading processing                                                  |
-| [INLONG-8758](https://github.com/apache/inlong/issues/8758) | [Improve][DataProxy] Metadata synchronization management optimization                                                           |
-| [INLONG-8741](https://github.com/apache/inlong/issues/8741) | [Bug][DataProxy] Wrong constant reference in CommonConfigHolder class                                                           |
-| [INLONG-8729](https://github.com/apache/inlong/issues/8729) | [Bug][DataProxy] Wrong result in the addSendResultMetric function also reports success                                          |
-| [INLONG-8725](https://github.com/apache/inlong/issues/8725) | [Improve][DataProxy] Cache file metric output switch value at usage location                                                    |
-| [INLONG-8679](https://github.com/apache/inlong/issues/8679) | [Improve][DataProxy] Migrate index-related variables to abstract classes                                                        |
-| [INLONG-8670](https://github.com/apache/inlong/issues/8670) | [Improve][DataProxy] Define in detail the exceptions actively thrown in Source                                                  |
-| [INLONG-8657](https://github.com/apache/inlong/issues/8657) | [Improve][DataProxy] Cache Source, Sink name and Channel object content                                                         |
-| [INLONG-8597](https://github.com/apache/inlong/issues/8597) | [Improve][DataProxy] Adjust the format of the metric output to the file                                                         |
-| [INLONG-8589](https://github.com/apache/inlong/issues/8589) | [Improve][DataProxy] Add callback parameter support for Http access                                                             |
-| [INLONG-8576](https://github.com/apache/inlong/issues/8576) | [Improve][DataProxy] Adjust handling when messages are incomplete                                                               |
-| [INLONG-8507](https://github.com/apache/inlong/issues/8507) | [Improve][Dataproxy] Modify nodeIp in dataproxy message to clientIp                                                             |
-| [INLONG-6364](https://github.com/apache/inlong/issues/6364) | [Improve][DataProxy] Add DataProxy node load information stage/stale                                                            |
-| [INLONG-8799](https://github.com/apache/inlong/issues/8799) | [Bug][Manager][Agent][DataProxy] The "opentelemetry" related configs may affect the startup of services                         |
-| [INLONG-8611](https://github.com/apache/inlong/issues/8611) | [Feature][Manager][Agent][DataProxy] Support full link tracking to improve the observability of the project                     |
-| [INLONG-8936](https://github.com/apache/inlong/issues/8936) | [Bug][DataProxy] The log's path for DataProxy is wrong                                                                          |
+|             <div style="width:150px">ISSUE</div>              | <div style="width:950px">Summary</div>                                                             |
+|:-------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
+| [INLONG-10066](https://github.com/apache/inlong/issues/10066) |[Improve][DataProxy] Optimize the related configuration settings in the CommonConfigHolder.java file|
+| [INLONG-10067](https://github.com/apache/inlong/issues/10067) |[Improve][DataProxy] Simplify the configuration and acquisition of the Manager address|                                                                     |
+| [INLONG-10080](https://github.com/apache/inlong/issues/10080) |[Improve][DataProxy] DataProxy implementation optimization|
+| [INLONG-10081](https://github.com/apache/inlong/issues/10081) |[Improve][DataProxy] Modify the data format of metadata saved in the metadata.json file|
+| [INLONG-10102](https://github.com/apache/inlong/issues/10102) |[Improve][DataProxy] Adjust the position where Source calls addSourceReportInfo()|
+| [INLONG-10111](https://github.com/apache/inlong/issues/10111) |[Improve][DataProxy] Add auditVersion field processing|
+| [INLONG-10313](https://github.com/apache/inlong/issues/10313) |[Improve][DataProxy] Replace audit ID macro with audit API|
+| [INLONG-10441](https://github.com/apache/inlong/issues/10441) |[Improve][DataProxy] DataProxy supports obtaining Audit-Proxy through InLong Manager|
+
 
 ### Manager
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-8852](https://github.com/apache/inlong/issues/8852) | [Improve][Manager] Supports fuzzy matching of username based on keyword                                                         |
-| [INLONG-8845](https://github.com/apache/inlong/issues/8845) | [Feature][Manager] Support Tencent Cloud Log Service data flow                                                                  |
-| [INLONG-8834](https://github.com/apache/inlong/issues/8834) | [Bug][Manager] No relationship generated after setting the transformnode                                                        |
-| [INLONG-8832](https://github.com/apache/inlong/issues/8832) | [Bug][Manager] The request type for transform/list in the client does not match the actual one                                  |
-| [INLONG-8829](https://github.com/apache/inlong/issues/8829) | [Improve][Manager] Support configuring whether to use zookeeper by request                                                      |
-| [INLONG-8827](https://github.com/apache/inlong/issues/8827) | [Feature][Manager] Inlong manager sql directory is incorrect in docker README                                                   |
-| [INLONG-8823](https://github.com/apache/inlong/issues/8823) | [Feature][Manager] Supporting data flow to Pulsar                                                                               |
-| [INLONG-8816](https://github.com/apache/inlong/issues/8816) | [INLONG-8815][Manager] Supports configuring iceberg streamSources                                                               |
-| [INLONG-8815](https://github.com/apache/inlong/issues/8815) | [Improve][Manager] Supports configuring iceberg streamSources                                                                   |
-| [INLONG-8813](https://github.com/apache/inlong/issues/8813) | [Improve][Manager] Replacing whitespace characters in MySQL JDBC URL                                                            |
-| [INLONG-8805](https://github.com/apache/inlong/issues/8805) | [Feature][Manager] Check tenant status before deleting tenant                                                                   |
-| [INLONG-8799](https://github.com/apache/inlong/issues/8799) | [Bug][Manager][Agent][DataProxy] The "opentelemetry" related configs may affect the startup of services                         |
-| [INLONG-8797](https://github.com/apache/inlong/issues/8797) | [Feature][Manager][Sort] Audit has no data for data sync                                                                        |
-| [INLONG-8794](https://github.com/apache/inlong/issues/8794) | [Improve][Manager] Support add streamField and sinkField                                                                        |
-| [INLONG-8781](https://github.com/apache/inlong/issues/8781) | [Bug][Manager] When batch task is finished, exception is throw                                                                  |
-| [INLONG-8773](https://github.com/apache/inlong/issues/8773) | [Improve][Manager] Optimize Agent heartbeat logic                                                                               |
-| [INLONG-8771](https://github.com/apache/inlong/issues/8771) | [Bug][Manager] Audit data error for MySQL data source                                                                           |
-| [INLONG-8751](https://github.com/apache/inlong/issues/8751) | [Bug][Manager] Response of data preview was empty                                                                               |
-| [INLONG-8749](https://github.com/apache/inlong/issues/8749) | [Improve][Manager] Support configuring whether to initialize node state during startup                                          |
-| [INLONG-8739](https://github.com/apache/inlong/issues/8739) | [Bug][Manager] The file collection task was mistakenly deleted                                                                  |
-| [INLONG-8675](https://github.com/apache/inlong/issues/8675) | [Bug][Manager]Manager client InlongTenant get method request type error                                                         |
-| [INLONG-8671](https://github.com/apache/inlong/issues/8671) | [Bug][Manager] Find no method parameter of form data in POST request                                                            |
-| [INLONG-8663](https://github.com/apache/inlong/issues/8663) | [Improve][Manager] Add tenant related OpenAPI                                                                                   |
-| [INLONG-8627](https://github.com/apache/inlong/issues/8627) | [Improve][Manager] Add parameters validation for the testConnection method                                                      |
-| [INLONG-8622](https://github.com/apache/inlong/issues/8622) | [Improve][Manager] Optimize the permission control of user API                                                                  |
-| [INLONG-8620](https://github.com/apache/inlong/issues/8620) | [INLONG-8619][Manager] Remove the inlong role check of internal interfaces                                                      |
-| [INLONG-8619](https://github.com/apache/inlong/issues/8619) | [Improve][Manager] Remove the inlong role check of internal interfaces                                                          |
-| [INLONG-8618](https://github.com/apache/inlong/issues/8618) | [INLONG-8617][Manager] Optimize compatibility of SortSdk config interface  1.9.x/bugfix                                         |
-| [INLONG-8617](https://github.com/apache/inlong/issues/8617) | [Improve][Manager] Optimize compatibility of SortSdk config interface                                                           |
-| [INLONG-8611](https://github.com/apache/inlong/issues/8611) | [Feature][Manager][Agent][DataProxy] Support full link tracking to improve the observability of the project                     |
-| [INLONG-8606](https://github.com/apache/inlong/issues/8606) | [INLONG-8590][Manager] Make Cluster and ClusterTags as public resources                                                         |
-| [INLONG-8603](https://github.com/apache/inlong/issues/8603) | [Bug][Manager] Fix the vulnerability to security attacks for the MySQL JDBC URL                                                 |
-| [INLONG-8590](https://github.com/apache/inlong/issues/8590) | [Improve][Manager] Make Cluster and ClusterTags as public resources                                                             |
-| [INLONG-8586](https://github.com/apache/inlong/issues/8586) | [Improve][Manager] Stop Stream Source which is still running after group is stopped                                             |
-| [INLONG-8582](https://github.com/apache/inlong/issues/8582) | [Improve][Manager] Remove unnecessary log information in InlongClusterServiceImpl                                               |
-| [INLONG-8570](https://github.com/apache/inlong/issues/8570) | [Bug][Manager] Modules in the wrong order cause UT execution to fail                                                            |
-| [INLONG-8568](https://github.com/apache/inlong/issues/8568) | [INLONG-8567][Manager] Add new role INLONG_SERVICE for internal service query  1.9.x/bugfix                                     |
-| [INLONG-8567](https://github.com/apache/inlong/issues/8567) | [Feature][Manager] Add new role INLONG_SERVICE for internal service query                                                       |
-| [INLONG-8564](https://github.com/apache/inlong/issues/8564) | [Bug][Manager] Unable to issue tasks after modifying data node info                                                             |
-| [INLONG-8563](https://github.com/apache/inlong/issues/8563) | [Improve][Manager] Opitmize the permission check of tenant-related operation                                                    |
-| [INLONG-8556](https://github.com/apache/inlong/issues/8556) | [Improve][Manager] Optimize the location of the manager-plugins-flink jar package                                               |
-| [INLONG-8550](https://github.com/apache/inlong/issues/8550) | [INLONG-8547][Manager] Add workflow approver automatically when create a new tenant                                             |
-| [INLONG-8547](https://github.com/apache/inlong/issues/8547) | [Feature][Manager] Add workflow approver automatically when create a new tenant                                                 |
-| [INLONG-8541](https://github.com/apache/inlong/issues/8541) | [Bug][Manager] Save InlongGroup with error tenant 1.9.x/bugfix                                                                  |
-| [INLONG-8539](https://github.com/apache/inlong/issues/8539) | [Improve][Manager] Remove stream source when heartbeat of agent contains no group message                                       |
-| [INLONG-8537](https://github.com/apache/inlong/issues/8537) | [Bug][Manager] Insert group failed 1.9.x/bugfix                                                                                 |
-| [INLONG-8535](https://github.com/apache/inlong/issues/8535) | [Bug][Manager] There is a null pointer when calling updateRuntimeConfig method                                                  |
-| [INLONG-8529](https://github.com/apache/inlong/issues/8529) | [Improve][Manager] update stream source to heartbeat timeout when evit cluster node                                             |
-| [INLONG-8522](https://github.com/apache/inlong/issues/8522) | [Improve][Manager] Optimize log print for AgentService                                                                          |
-| [INLONG-8516](https://github.com/apache/inlong/issues/8516) | [Improve][Manager] Missing scala dependency for Flink 1.15 1.9.x/bugfix                                                         |
-| [INLONG-8514](https://github.com/apache/inlong/issues/8514) | [Improve][Manager] Support ClickHouse field type special modifier Nullable                                                      |
-| [INLONG-8509](https://github.com/apache/inlong/issues/8509) | [Improve][Manager] Optimize preProcessTemplateFileTask in AgentServiceImpl                                                      |
-| [INLONG-8492](https://github.com/apache/inlong/issues/8492) | [INLONG-8490][Manager] Duplicate queried audit data according to all fields                                                     |
-| [INLONG-8491](https://github.com/apache/inlong/issues/8491) | [Feature][Manager] manager client support list inlong streams with sources and sinks by paginating                              |
-| [INLONG-8490](https://github.com/apache/inlong/issues/8490) | [Improve][Manager] Duplicate queried audit data according to all fields                                                         |
-| [INLONG-8488](https://github.com/apache/inlong/issues/8488) | [INLONG-8374][Manager] Manager client tools support multiple tenant                                                             |
-| [INLONG-8448](https://github.com/apache/inlong/issues/8448) | [INLONG-8447][Manager] Optimize paging logic                                                                                    |
-| [INLONG-8447](https://github.com/apache/inlong/issues/8447) | [Improve][Manager] Optimize paging logic  stage/stale                                                                           |
-| [INLONG-8446](https://github.com/apache/inlong/issues/8446) | [Feature][Manager] Remove the permission check logic in Services and DAOs  good first issue                                     |
-| [INLONG-8403](https://github.com/apache/inlong/issues/8403) | [Feature][Manager] Support resource migrate to different tenant                                                                 |
-| [INLONG-8374](https://github.com/apache/inlong/issues/8374) | [Feature][Manager] Manager client tools support multiple tenant good first issue                                                |
-| [INLONG-8360](https://github.com/apache/inlong/issues/8360) | [Improve][Manager] Support previewing data of Kafka                                                                             |
-| [INLONG-8939](https://github.com/apache/inlong/issues/8939) | [Improve][Manager] Add a switch to initiate the delete data source task                                                         |
-| [INLONG-8946](https://github.com/apache/inlong/issues/8946) | [Improve][Manager] Optimize the audit ID method issued by the manager                                                           |
-| [INLONG-8951](https://github.com/apache/inlong/issues/8951) | [Improve][Manager] Support for configuring built-in fields for iceberg                                                          |
+| <div style="width:150px">ISSUE</div>                          | <div style="width:950px">Summary</div>                                                            |
+|:--------------------------------------------------------------|:--------------------------------------------------------------------------------------------------|
+| [INLONG-10056](https://github.com/apache/inlong/issues/10056) |[Feature][Manager] Support new manager plugin for flink 1.18|
+| [INLONG-10071](https://github.com/apache/inlong/issues/10071) |[Improve][Manager] Supplementary statement trailing semicolon in apache_inlong_manager.sql|
+| [INLONG-10074](https://github.com/apache/inlong/issues/10074) |[Bug][Manager] Error in querying audit information based on IP address|
+| [INLONG-10076](https://github.com/apache/inlong/issues/10076) |[Bug][Manager] Data type 'doris' not support|
+| [INLONG-10096](https://github.com/apache/inlong/issues/10096) |[Improve][Manager] Support installing agents by SSH|
+| [INLONG-10105](https://github.com/apache/inlong/issues/10105) |[Bug][Manager]Fix sort standalone get kafka config error|
+| [INLONG-10135](https://github.com/apache/inlong/issues/10135) |[Improve][Manager] Move inlongCompressType to clustertag configuration|
+| [INLONG-10136](https://github.com/apache/inlong/issues/10136) |[Improve][Manager] Clean up ElasticSearch and ClickHouse audit source query function|
+| [INLONG-10141](https://github.com/apache/inlong/issues/10141) |[Improve][Manager] Data preview supports returning header and specific field information for inlong msg v1|
+| [INLONG-10150](https://github.com/apache/inlong/issues/10150) |[Improve][Manager] Remove metrics. audit. proxy. hosts from Flink sort plugins. properties|
+| [INLONG-10169](https://github.com/apache/inlong/issues/10169) |[Improve][Manager]Support configure sort cluster for kafka|
+| [INLONG-10176](https://github.com/apache/inlong/issues/10176) |[Bug][Manager] Table creation statement error|
+| [INLONG-10181](https://github.com/apache/inlong/issues/10181) |[Improve][Manager] Remove useless exceptions for DataNodeOperator.getNodeConfig|
+| [INLONG-10197](https://github.com/apache/inlong/issues/10197) |[Improve][Manager] Support OpenAPI for querying audit data|
+| [INLONG-10200](https://github.com/apache/inlong/issues/10200) |[Improve][Manager] Define module type mapping relationships|
+| [INLONG-10204](https://github.com/apache/inlong/issues/10204) |[Feature][Manager]  Kafka sink supports automatic allocation of sort standalone cluster|
+| [INLONG-10233](https://github.com/apache/inlong/issues/10233) |[Improve][Manager] Report heartbeat removal port restriction|
+| [INLONG-10245](https://github.com/apache/inlong/issues/10245) |[Improve][Manager] Support setting audit version for file collection|
+| [INLONG-10247](https://github.com/apache/inlong/issues/10247) |[Feature][Manager] Support schedule information management for offline sync|
+| [INLONG-10249](https://github.com/apache/inlong/issues/10249) |[Bug][Manager]Duplicate data appears during data preview|
+| [INLONG-10252](https://github.com/apache/inlong/issues/10252) |[Bug][Manager] The audit ip which taskmanager received was wrong|
+| [INLONG-10260](https://github.com/apache/inlong/issues/10260) |[Bug][Manager] Correct the wrong create table statement|
+| [INLONG-10261](https://github.com/apache/inlong/issues/10261) |[Feature][Manager] Support installing agents by SSH key-based authentication|
+| [INLONG-10265](https://github.com/apache/inlong/issues/10265) |[Bug][Manager] Correct wrong starrocks create table statement|
+| [INLONG-10266](https://github.com/apache/inlong/issues/10266) |[Bug][Manager] Password is overwritten when adding field information|
+| [INLONG-10270](https://github.com/apache/inlong/issues/10270) |[Improve][Manager] Data source tasks allow for multiple IPs|
+| [INLONG-10277](https://github.com/apache/inlong/issues/10277) |[Improve][Manager] Support calling API to refresh cluster config|
+| [INLONG-10279](https://github.com/apache/inlong/issues/10279) |[Improve][Manager] Support compress unified configuration|
+| [INLONG-10283](https://github.com/apache/inlong/issues/10283) |[Bug][Manager] Migration of groups does not support multiple groups migrating to the same tenant|
+| [INLONG-10284](https://github.com/apache/inlong/issues/10284) |[Improve][Manager] Change the default flink version from 1.13 to 1.15|
+| [INLONG-10290](https://github.com/apache/inlong/issues/10290) |[Improve][Manager] Prohibit groups that have not been successfully configured from obtaining dataproxy addresses|
+| [INLONG-10300](https://github.com/apache/inlong/issues/10300) |[Improve][Manager] Allow unsubmitted groups to modify mq type|
+| [INLONG-10305](https://github.com/apache/inlong/issues/10305) |[Improve][Manager] Delete k8s related parameters in file collection|
+| [INLONG-10324](https://github.com/apache/inlong/issues/10324) |[Bug][Manager] UseExtendedFields in Stream incorrectly overwritten|
+| [INLONG-10326](https://github.com/apache/inlong/issues/10326) |[Improve][Manager] Support obtaining tenant information based on groupId|
+| [INLONG-10328](https://github.com/apache/inlong/issues/10328) |[Improve][Manager] Support automatic synchronization of stream fields to sink|
+| [INLONG-10330](https://github.com/apache/inlong/issues/10330) |[Improve][Manager] Support field template management|
+| [INLONG-10335](https://github.com/apache/inlong/issues/10335) |[Improve][Manager] Use audit sdk to obtain audit ID|
+| [INLONG-10345](https://github.com/apache/inlong/issues/10345) |[Bug][Manager] Error in obtaining audit id value|
+| [INLONG-10351](https://github.com/apache/inlong/issues/10351) |[Bug][Manager] No auditname returned when obtaining audit information|
+| [INLONG-10353](https://github.com/apache/inlong/issues/10353) |[Improve][Manager] refactor code for building and submitting flink job|
+| [INLONG-10360](https://github.com/apache/inlong/issues/10360) |[Improve][Manager] Combine schedule state transition with group operations|
+| [INLONG-10362](https://github.com/apache/inlong/issues/10362) |[Improve][Manager] Simplify code for InLong group management|
+| [INLONG-10363](https://github.com/apache/inlong/issues/10363) |[Improve][Manager] Support template multi tenant management|
+| [INLONG-10368](https://github.com/apache/inlong/issues/10368) |[Improve][Manager] Data preview supports obtaining message attribute information|
+| [INLONG-10370](https://github.com/apache/inlong/issues/10370) |[Improve][Manager] Support configuration of kV data format|
+| [INLONG-10373](https://github.com/apache/inlong/issues/10373) |[Improve][Manager] Manager client support template operation|
+| [INLONG-10375](https://github.com/apache/inlong/issues/10375) |[Improve][Manager] Add field mapping strategy for CLS, StarRocks and Elasticsearch|
+| [INLONG-10382](https://github.com/apache/inlong/issues/10382) |[Improve][Manager] Support obtaining node information through unique keys|
+| [INLONG-10388](https://github.com/apache/inlong/issues/10388) |[Improve][Manager] Provide an interface to obtain the audit proxy address|
+| [INLONG-10391](https://github.com/apache/inlong/issues/10391) |[Improve][Manager] Supports configuring zk clusters and issuing zk addresses to agents|
+| [INLONG-10395](https://github.com/apache/inlong/issues/10395) |[Feature][Manager] Add interface for schedule client and engine|
+| [INLONG-10396](https://github.com/apache/inlong/issues/10396) |[Feature][Manager] Support build-in schedule base on quartz|
+| [INLONG-10405](https://github.com/apache/inlong/issues/10405) |[Bug][Manager] Iceberg field type mapping error |
+| [INLONG-10407](https://github.com/apache/inlong/issues/10407) |[Improve][Manager] Increase the interval for determining heartbeat timeout|
+| [INLONG-10413](https://github.com/apache/inlong/issues/10413) |[Improve][Manager] Support for configuring built-in fields for mysql and kafka|
+| [INLONG-10415](https://github.com/apache/inlong/issues/10415) |[Improve][Manager] Kafka source supports configuring wraptype|
+| [INLONG-10423](https://github.com/apache/inlong/issues/10423) |[Improve][Manager] Modify unified configuration related classes and interfaces|
+| [INLONG-10425](https://github.com/apache/inlong/issues/10425) |[Bug][Manager] The kafka sink defines duplicate attributes|
+| [INLONG-10430](https://github.com/apache/inlong/issues/10430) |[Bug][Manager] Check update error of unified configuration |
+| [INLONG-10432](https://github.com/apache/inlong/issues/10432) |[Improve][Manager] Delete unused method getMetaConfig|
+| [INLONG-10434](https://github.com/apache/inlong/issues/10434) |[Improve][Manager] Allow creating cluster nodes without setting port|
+| [INLONG-10436](https://github.com/apache/inlong/issues/10436) |[Improve][Manager] move scheudle configuration from stream to group level|
+| [INLONG-10438](https://github.com/apache/inlong/issues/10438) |[Improve][Manager] GetConfig does not throw an exception when obtaining the zk address fails|
+| [INLONG-10452](https://github.com/apache/inlong/issues/10452) |[Improve][Manager] Delete the method of querying audit information through MySQL|
+| [INLONG-10455](https://github.com/apache/inlong/issues/10455) |[Bug][Manager] Set KafkaDataNode ack fail|
+| [INLONG-10459](https://github.com/apache/inlong/issues/10459) |[Feature][Manager] Support schedule instance callback to submit Flink batch job|
+| [INLONG-10472](https://github.com/apache/inlong/issues/10472) |[Improve][Manager] Use audit SDK to obtain audit proxy URL|
+| [INLONG-10474](https://github.com/apache/inlong/issues/10474) |[Feature][Manager] Restrict sortTaskName and sortConsumeName the same with datanodeName when migrate Inlong Group|
+| [INLONG-10484](https://github.com/apache/inlong/issues/10484) | [Improve][Manager] Refactor code in manager-service module                                                      |
+| [INLONG-10487](https://github.com/apache/inlong/issues/10487) | [Bug][Manager] Not return success ListenerResult                                                                |
+| [INLONG-10495](https://github.com/apache/inlong/issues/10495) | [Bug][Manager] ScanStartupSubStartOffset is set to null in pulsar extranode                                     |
+| [INLONG-10498](https://github.com/apache/inlong/issues/10498) | [Improve][Manager] Template supports modifying associated tenants                                               |
+| [INLONG-10505](https://github.com/apache/inlong/issues/10505) | [Bug][Manager] Data preview cannot recognize null values in the data                                            |
+| [INLONG-10506](https://github.com/apache/inlong/issues/10506) | [Improve][Manager] When obtaining a template, return information such as creator and modifier                   |
+| [INLONG-10512](https://github.com/apache/inlong/issues/10512) | [Improve][Manager] Support preview of data in kv data type                                                      |
+| [INLONG-10514](https://github.com/apache/inlong/issues/10514) | [Feature][Manager] Support built-in schedule engine trigger submitting of Flink batch job                       |
+| [INLONG-10516](https://github.com/apache/inlong/issues/10516) | [Improve][Manager] Add jdbc connectors on flink 1.15 module to manager image                                    |
+| [INLONG-10520](https://github.com/apache/inlong/issues/10520) | [Bug][Manager] Protocol Type reported by dataproxy not correctly accepted                                       |
+| [INLONG-10543](https://github.com/apache/inlong/issues/10543) | [Improve][Manager] The delimiter and other configurations in CLS and ES sink are obtained from the stream       |
+| [INLONG-10558](https://github.com/apache/inlong/issues/10558) | [Improve][Manager] Support determining whether to issue agent tasks based on the MD5 value                      |
+| [INLONG-10561](https://github.com/apache/inlong/issues/10561) | [Feature][Manager] Support configrations for bounded source                                                     |
+| [INLONG-10562](https://github.com/apache/inlong/issues/10562) | [Feature][Manager] SortConfig supports set start and stop consume time                                          |
+| [INLONG-10589](https://github.com/apache/inlong/issues/10589) | [Improve][Manager] Rename OfflineJobSubmitRequest and remove log in controller                                  |
+| [INLONG-10601](https://github.com/apache/inlong/issues/10601) | [Improve][Manager] Optimize the agent task configuration process                                                |
+| [INLONG-10625](https://github.com/apache/inlong/issues/10625) | [Bug][Manager] The responsible person cannot modify the template configuration                                  |
+| [INLONG-10635](https://github.com/apache/inlong/issues/10635) | [Improve][Manager] Optimize the installer configuration process                                                 |
+| [INLONG-10638](https://github.com/apache/inlong/issues/10638) | [Improve][Manager] Data preview supports filtering function                                                     |
+| [INLONG-10648](https://github.com/apache/inlong/issues/10648) | [Bug][Manager] The get sort config interface returns an error status code                                       |
+| [INLONG-10689](https://github.com/apache/inlong/issues/10689) | [Improve][Manager] Support querying metric information                                                          |
 
 ### SDK
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-8916](https://github.com/apache/inlong/issues/8916) | [Improve][SDK] Update SDK configuration file for dataproxy cpp sdk                                                              |
-| [INLONG-8910](https://github.com/apache/inlong/issues/8910) | [Improve][SDK] Adjust some default configuration parameters                                                                     |
-| [INLONG-8905](https://github.com/apache/inlong/issues/8905) | [Improve][SDK] Code specifications for dataproxy cpp sdk                                                                        |
-| [INLONG-8896](https://github.com/apache/inlong/issues/8896) | [Improve][SDK] Remove old code before refactoring for dataproxy cpp sdk                                                         |
-| [INLONG-8891](https://github.com/apache/inlong/issues/8891) | [Improve][SDK] Optimize compile for dataproxy cpp sdk                                                                           |
-| [INLONG-8889](https://github.com/apache/inlong/issues/8889) | [Improve][SDK] Optimize CmakeList for dataproxy cpp sdk                                                                         |
-| [INLONG-8887](https://github.com/apache/inlong/issues/8887) | [Improve][SDK] Optimize api framework for dataproxy cpp sdk                                                                     |
-| [INLONG-8885](https://github.com/apache/inlong/issues/8885) | [Improve][SDK] Optimize tcp manager framework for dataproxy cpp sdk                                                             |
-| [INLONG-8883](https://github.com/apache/inlong/issues/8883) | [Improve][SDK] Optimize proxy config manager framework for dataproxy cpp sdk                                                    |
-| [INLONG-8868](https://github.com/apache/inlong/issues/8868) | [Improve][SDK] Optimize send data framework for dataproxy cpp sdk                                                               |
-| [INLONG-8866](https://github.com/apache/inlong/issues/8866) | [Improve][SDK] Optimize data receiving framework for dataproxy cpp sdk                                                          |
-| [INLONG-8864](https://github.com/apache/inlong/issues/8864) | [Improve][SDK] Add memory utils for dataproxy cpp sdk                                                                           |
-| [INLONG-8861](https://github.com/apache/inlong/issues/8861) | [Improve][SDK] Add mutex utils for dataproxy cpp sdk                                                                            |
-| [INLONG-8860](https://github.com/apache/inlong/issues/8860) | [Improve][SDK] Add log utils for dataproxy cpp sdk                                                                              |
-| [INLONG-8858](https://github.com/apache/inlong/issues/8858) | [Improve][SDK] Add init helper information for dataproxy cpp sdk                                                                |
-| [INLONG-8856](https://github.com/apache/inlong/issues/8856) | [Improve][SDK] Add msg information for dataproxy cpp sdk                                                                        |
-| [INLONG-8854](https://github.com/apache/inlong/issues/8854) | [Improve][SDK] Add return code information for dataproxy cpp sdk                                                                |
-| [INLONG-8784](https://github.com/apache/inlong/issues/8784) | [INLONG-8766][SDK] SortSdk create consumer in parallel                                                                          |
-| [INLONG-8766](https://github.com/apache/inlong/issues/8766) | [Improve][SDK] SortSdk create consumer in parallel                                                                              |
-| [INLONG-8747](https://github.com/apache/inlong/issues/8747) | [Improve][SDK] Optimize the local configuration management of cpp sdk                                                           |
-| [INLONG-8728](https://github.com/apache/inlong/issues/8728) | [Improve][SDK] Optimize the problem of third-party openssl library dependency failure                                           |
-| [INLONG-8639](https://github.com/apache/inlong/issues/8639) | [Improve][SDK] Improve send failed logic of DataProxy                                                                           |
-| [INLONG-8637](https://github.com/apache/inlong/issues/8637) | [Improve][SDK] Pool data request and batch request for DataProxy                                                                |
-| [INLONG-8635](https://github.com/apache/inlong/issues/8635) | [Improve][SDK] Update dependency packages and required Go version for DataProxy                                                 |
-| [INLONG-8633](https://github.com/apache/inlong/issues/8633) | [Improve][SDK] Update debug log level for DataProxy SDK                                                                         |
-| [INLONG-8631](https://github.com/apache/inlong/issues/8631) | [Improve][SDK] Handle context.Done() in Send() for DataProxy SDK                                                                |
+| <div style="width:150px">ISSUE</div>                          | <div style="width:950px">Summary</div>          |
+|:--------------------------------------------------------------|:------------------------------------------------|
+| [INLONG-10109](https://github.com/apache/inlong/issues/10109) |[Feature][SDK] Support to transform from Json protocol to CSV/KV protocol by single SQL|
+| [INLONG-10117](https://github.com/apache/inlong/issues/10117) |[Feature][SDK] Support to transform from PB protocol to CSV/KV protocol by single SQL|
+| [INLONG-10129](https://github.com/apache/inlong/issues/10129) |[Feature][SDK] Transform SQL support +-*/ operations|
+| [INLONG-10130](https://github.com/apache/inlong/issues/10130) |[Feature][SDK] Transform SQL support string concat function|
+| [INLONG-10154](https://github.com/apache/inlong/issues/10154) |[Feature][SDK] Support to transform CSV/KV data to CSV/KV data without field list configuration|
+| [INLONG-10213](https://github.com/apache/inlong/issues/10213) |[Feature][SDK] SortSDK support unified sort configuration|
+| [INLONG-10221](https://github.com/apache/inlong/issues/10221) |[Improve][SDK] DataProxy SDK of cpp supports automatic installation of log4cplus components|
+| [INLONG-10291](https://github.com/apache/inlong/issues/10291) |[Bug][SDK] Incorrect initializing of gnet in Golang SDK|
+| [INLONG-10292](https://github.com/apache/inlong/issues/10292) |[Bug][SDK] Panic in `connpool.UpdateEndpoints()` of Golang SDK|
+| [INLONG-10427](https://github.com/apache/inlong/issues/10427) |[Feature][SDK] The Go SDK supports authentication for Manager access|
+| [INLONG-10457](https://github.com/apache/inlong/issues/10457) |[Bug][SDK] Fix auth spelling errors|
+| [INLONG-10522](https://github.com/apache/inlong/issues/10522) |[Feature][SDK] SortSDK support assgin subscription|
+| [INLONG-10531](https://github.com/apache/inlong/issues/10531) |[Feature][SDK] Add InLong Dataproxy Python SDK based on C++ SDK|
+| [INLONG-10532](https://github.com/apache/inlong/issues/10532) |[Improve][SDK] Add InLong Dataproxy Python SDK sample|
+| [INLONG-10534](https://github.com/apache/inlong/issues/10534) |[Umbrella][SDK] InLong Dataproxy Python SDK |
+| [INLONG-10603](https://github.com/apache/inlong/issues/10603) |[Feature][SDK] Transform SQL support arithmetic functions(Including power, abs, sqrt and ln)|
+| [INLONG-10607](https://github.com/apache/inlong/issues/10607) |[Feature][SDK] Transform SQL support arithmetic functions(Including log10, log2, log and exp)|
+| [INLONG-10652](https://github.com/apache/inlong/issues/10652) |[Improve][SDK] Inlong Transform support for generics|
+| [INLONG-10668](https://github.com/apache/inlong/issues/10668) |[Improve][SDK] Add rebalance and recover support of conn pool in Golang SDK|
+| [INLONG-10670](https://github.com/apache/inlong/issues/10670) |[Bug][SDK] Potential block in Golang SDK|
+| [INLONG-10676](https://github.com/apache/inlong/issues/10676) |[Improve][SDK] Fix type asserttion and type switch warnings in Golang SDK|
+| [INLONG-10677](https://github.com/apache/inlong/issues/10677) |[Improve][SDK] Bump up modules in Golang SDK|
+| [INLONG-10675](https://github.com/apache/inlong/issues/10675) |[Improve][SDK] Use exponential backoff instead of linear backoff retrying in Golang SDK|
 
 ### Sort
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-8897](https://github.com/apache/inlong/issues/8897) | [Bug][Sort] update dbz option name 'schema. whitelist' to 'schema.include.list'                                                 |
-| [INLONG-8848](https://github.com/apache/inlong/issues/8848) | [Bug][Sort] Sort base dependency error                                                                                          |
-| [INLONG-8839](https://github.com/apache/inlong/issues/8839) | [Feature][Sort] Add audit metric in starrocks connector on flink 1.15                                                           |
-| [INLONG-8838](https://github.com/apache/inlong/issues/8838) | [Improve][Sort] IcebergSource support metadata                                                                                  |
-| [INLONG-8825](https://github.com/apache/inlong/issues/8825) | [Feature][Sort] Optimize the field type conversion between source and target in the whole database scenario                     |
-| [INLONG-8818](https://github.com/apache/inlong/issues/8818) | [INLONG-8643][Sort] Support Iceberg source                                                                                      |
-| [INLONG-8808](https://github.com/apache/inlong/issues/8808) | [Improve][Sort] Improve convertToBinary for RowDataDebeziumDeserializeSchema                                                    |
-| [INLONG-8796](https://github.com/apache/inlong/issues/8796) | [Improve][Sort] Add SchemaChangeEventHandler to deal schema change event by each connector                                      |
-| [INLONG-8786](https://github.com/apache/inlong/issues/8786) | [Bug][Sort] The Doris schema should be changed in case of multiple URI                                                          |
-| [INLONG-8783](https://github.com/apache/inlong/issues/8783) | [Bug][Sort] MySql connector jdbc version is incompatible with mysql-cdc version                                                 |
-| [INLONG-8776](https://github.com/apache/inlong/issues/8776) | [Improve][Sort] MySql connector should add jdbc driver jar                                                                      |
-| [INLONG-8745](https://github.com/apache/inlong/issues/8745) | [Improve][Sort] Add incremental and postgre type in postgre connector                                                           |
-| [INLONG-8743](https://github.com/apache/inlong/issues/8743) | [Feature][Sort] Support more type of ddl in all migration                                                                       |
-| [INLONG-8667](https://github.com/apache/inlong/issues/8667) | [Improve][Sort] The inner class name was wrong in OracleSnapshotContext                                                         |
-| [INLONG-8653](https://github.com/apache/inlong/issues/8653) | [Bug][Sort] fix the query sql for jdbc pg dialect multiple table scenerios.                                                     |
-| [INLONG-8643](https://github.com/apache/inlong/issues/8643) | [Feature][Sort] Add Iceberg source on flink 1.15                                                                                |
-| [INLONG-8641](https://github.com/apache/inlong/issues/8641) | [Bug][Sort] SingleTableCustomFieldsPartitioner package name does not match path                                                 |
-| [INLONG-8616](https://github.com/apache/inlong/issues/8616) | [INLONG-8598][Sort] Optimize sortstandalone pulsar sink                                                                         |
-| [INLONG-8602](https://github.com/apache/inlong/issues/8602) | [Bug][Sort] Fix StackOverflowError of Oracle CDC                                                                                |
-| [INLONG-8598](https://github.com/apache/inlong/issues/8598) | [Improve][Sort] Optimize sortstandalone pulsar sink                                                                             |
-| [INLONG-8596](https://github.com/apache/inlong/issues/8596) | [Feature][Sort] Iceberg supports dynamic switching between append and upsert                                                    |
-| [INLONG-8594](https://github.com/apache/inlong/issues/8594) | [Bug][Sort] When change record is chunk range of snapshot phase, MongoDB cannot rewrite the record                              |
-| [INLONG-8579](https://github.com/apache/inlong/issues/8579) | [INLONG-8578][Sort] Fix npe inside outputReadPhaseMetrics in mysql-cdc                                                          |
-| [INLONG-8578](https://github.com/apache/inlong/issues/8578) | [Bug][Sort] NPE occurred inside outputReadPhaseMetrics of mysql-cdc                                                             |
-| [INLONG-8558](https://github.com/apache/inlong/issues/8558) | [Improve][Sort] Use database name in upper case at the OracleTableSourceFactory                                                 |
-| [INLONG-8551](https://github.com/apache/inlong/issues/8551) | [INLONG-8549][Sort] Fix incorrect use of maven plugin on integration test among sort-end-to-end-tests                           |
-| [INLONG-8549](https://github.com/apache/inlong/issues/8549) | [Bug][Sort] Incorrect use of maven plugin on integration test among sort-end-to-end-tests                                       |
-| [INLONG-8445](https://github.com/apache/inlong/issues/8445) | [Feature][Sort] Support running tests on both Flink 1.13 and Flink 1.15                                                         |
-| [INLONG-8436](https://github.com/apache/inlong/issues/8436) | [Bug][Sort] The backfill task not running bug in oracle cdc connector                                                           |
-| [INLONG-8279](https://github.com/apache/inlong/issues/8279) | [Bug][Sort] NPE when run MySqlLoadSqlParseTest                                                                                  |
-| [INLONG-8236](https://github.com/apache/inlong/issues/8236) | [Feature][Sort] Iceberg supports dynamic switching between append and upsert                                                    |
-| [INLONG-7908](https://github.com/apache/inlong/issues/7908) | [Feature][Sort] PostgreSQL connector supports parallel read                                                                     |
-| [INLONG-7900](https://github.com/apache/inlong/issues/7900) | [Feature][Sort] Support partition by custom fields when upsert single table of Kafka                                            |
-| [INLONG-7763](https://github.com/apache/inlong/issues/7763) | [Feature][Sort] Support ddl change for doris                                                                                    |
-| [INLONG-8797](https://github.com/apache/inlong/issues/8797) | [Feature][Manager][Sort] Audit has no data for data sync                                                                        |
-| [INLONG-8903](https://github.com/apache/inlong/issues/8903) | [Bug][TubeMQ][Sort] int64 not recognized by the compiler and Missing @Override annotations                                      |
-| [INLONG-8953](https://github.com/apache/inlong/issues/8953) | [Bug][Sort] Iceberg source default the StartSnapshot to the latest                                                              |
+| <div style="width:150px">ISSUE</div>                          | <div style="width:950px">Summary</div>                                                                                                |
+|:--------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [INLONG-8464](https://github.com/apache/inlong/issues/8464)   |[Feature] [Sort] Add JDBC connector on Flink 1.15|
+| [INLONG-10053](https://github.com/apache/inlong/issues/10053) |[Feature][Sort] Support flink-connector-pulsar based on flink 1.18|
+| [INLONG-10054](https://github.com/apache/inlong/issues/10054) |[Feature][Sort] Add dependencies for flink 1.18|
+| [INLONG-10055](https://github.com/apache/inlong/issues/10055) |[Feature][Sort] Support flink-connector-jdbc based on flink 1.18|                                                              |
+| [INLONG-10069](https://github.com/apache/inlong/issues/10069) |[Feature][Sort] Support audit metrics for sort-connector-pulsar-1.18|
+| [INLONG-10091](https://github.com/apache/inlong/issues/10091) |[Feature][Sort] Add json format for 1.18|
+| [INLONG-10144](https://github.com/apache/inlong/issues/10144) |[Feature][Sort] Redis connectors support audit ID|
+| [INLONG-10152](https://github.com/apache/inlong/issues/10152) |[Improve][Sort] Refactor MetricOption code structure.|
+| [INLONG-10159](https://github.com/apache/inlong/issues/10159) |[Feature][Sort] Kafka connector support audit ID|
+| [INLONG-10164](https://github.com/apache/inlong/issues/10164) |[Umbrella][Sort] SortStandalone support unified SortConfig|
+| [INLONG-10173](https://github.com/apache/inlong/issues/10173) |[Feature][Sort] SortStandalone support request unified configuration|
+| [INLONG-10183](https://github.com/apache/inlong/issues/10183) |[Feature][Sort] MongoDB connector support audit ID|
+| [INLONG-10193](https://github.com/apache/inlong/issues/10193) |[Feature][Sort] Postgres connector support audit ID|
+| [INLONG-10194](https://github.com/apache/inlong/issues/10194) |[Feature][Sort] Sqlserver connector support audit ID|
+| [INLONG-10208](https://github.com/apache/inlong/issues/10208) |[Feature][Sort] ClsSink support unified configuration|
+| [INLONG-10224](https://github.com/apache/inlong/issues/10224) |[Feature][Sort] Unified configuration check utils|
+| [INLONG-10228](https://github.com/apache/inlong/issues/10228) |[Feature][Sort] PulsarSink support unified configuration|
+| [INLONG-10229](https://github.com/apache/inlong/issues/10229) |[Feature][Sort] EsSink support unified configuration|
+| [INLONG-10230](https://github.com/apache/inlong/issues/10230) |[Feature][Sort] KafkaSink support unified configuration|
+| [INLONG-10257](https://github.com/apache/inlong/issues/10257) |[Improve][Sort] Upgrade flink version from 1.13.6 to 1.15.4|
+| [INLONG-10272](https://github.com/apache/inlong/issues/10272) |[Improve][Sort] Unified configuration check utils support check latest config|
+| [INLONG-10296](https://github.com/apache/inlong/issues/10296) |[Bug][Sort] Connectors AuditOperator  was not serialized|
+| [INLONG-10297](https://github.com/apache/inlong/issues/10297) |[Bug][Sort] The audit operator in mysql connector cannot be serialized and the job cannot submit to jobmanager|
+| [INLONG-10311](https://github.com/apache/inlong/issues/10311) |[Feature][Sort] TubeMQ source support report audit information exactly once|
+| [INLONG-10312](https://github.com/apache/inlong/issues/10312) |[Feature][Sort] Iceberg sink support report audit information exactly once|
+| [INLONG-10317](https://github.com/apache/inlong/issues/10317) |[Feature][Sort] Kafka Source support report audit information exactly once|
+| [INLONG-10323](https://github.com/apache/inlong/issues/10323) |[Feature][Sort] Support Kv deserialization in sort module|
+| [INLONG-10338](https://github.com/apache/inlong/issues/10338) |[Bug][Sort] Sqlserver connector's AuditOperator was not serialized |
+| [INLONG-10339](https://github.com/apache/inlong/issues/10339) |[Bug][Sort] PostgreSQL connector's AuditOperator was not serialized|
+| [INLONG-10340](https://github.com/apache/inlong/issues/10340) |[Bug][Sort] MongoDB connector's AuditOperator was not serialized|
+| [INLONG-10355](https://github.com/apache/inlong/issues/10355) |[Feature][Sort] Iceberg source support report audit information exactly once|
+| [INLONG-10357](https://github.com/apache/inlong/issues/10357) |[Feature][Sort] Starrocks sink support report audit information exactly once|
+| [INLONG-10358](https://github.com/apache/inlong/issues/10358) |[Feature][Sort] Pulsar source support report audit information exactly once|
+| [INLONG-10401](https://github.com/apache/inlong/issues/10401) |[Improve][Sort] Add metadata for Mysql connector and relocate debezium dependencies |
+| [INLONG-10489](https://github.com/apache/inlong/issues/10489) |[Bug][Sort] Mongodb2StarRocksTest sometime occur error when in workflow|
+| [INLONG-10492](https://github.com/apache/inlong/issues/10492) |[Bug][Sort] Init failure of pulsar connector|
+| [INLONG-10508](https://github.com/apache/inlong/issues/10508) |[Bug][Sort] Fix pulsar connector flink 1.15 parameter cannot keep consistent with flink 1.13 |
+| [INLONG-10526](https://github.com/apache/inlong/issues/10526) |[Improve][Sort] ClsSink support switch metadata acquire mode|
+| [INLONG-10527](https://github.com/apache/inlong/issues/10527) |[Improve][Sort] EsSink support switch metadata acquire mode|
+| [INLONG-10528](https://github.com/apache/inlong/issues/10528) |[Improve][Sort] KafkaSink support switch metadata acquire mode|
+| [INLONG-10529](https://github.com/apache/inlong/issues/10529) |[Improve][Sort] PulsarSink support switch metadata acquire mode|
+| [INLONG-10530](https://github.com/apache/inlong/issues/10530) |[Umbrella][Sort] Sortstandalone support switch metadata acquire mode|
+| [INLONG-10540](https://github.com/apache/inlong/issues/10540) |[Feature][Sort] SortStandalone unified configuration metric reporter|
+| [INLONG-10555](https://github.com/apache/inlong/issues/10555) |[Feature][Sort] SortStandalone support report the difference between two configuration|
+| [INLONG-10560](https://github.com/apache/inlong/issues/10560) |[Feature][Sort] Support bounded pulsar source|
+| [INLONG-10568](https://github.com/apache/inlong/issues/10568) |[Improve][Sort] The starrocks connector UNKNOWN datatype handle method need to change|
+| [INLONG-10573](https://github.com/apache/inlong/issues/10573) |[Improve][Sort] Pulsar source connector report audit attach input time|
+| [INLONG-10575](https://github.com/apache/inlong/issues/10575) |[Improve][Sort] Mysql source support report audit information exactly once|
+| [INLONG-10577](https://github.com/apache/inlong/issues/10577) |[Feature][Sort] Simplified SortStandalone SortSdkSource|
+| [INLONG-10594](https://github.com/apache/inlong/issues/10594) |[Improve][Sort] Provide default kafka producer configuration|
+| [INLONG-10597](https://github.com/apache/inlong/issues/10597) |[Improve][Sort] Provide default pulsar producer configuration|
+| [INLONG-10604](https://github.com/apache/inlong/issues/10604) |[Bug][Sort] NPE when unified configuration is not exits|
+| [INLONG-10609](https://github.com/apache/inlong/issues/10609) |[Improve][Sort] PostgreSQL source support report audit information exactly once|
+| [INLONG-10610](https://github.com/apache/inlong/issues/10610) |[Improve][Sort] MongoDB source support report audit information exactly once|
+| [INLONG-10623](https://github.com/apache/inlong/issues/10623) |[Feature][Sort] The Pulsar connector on flink1.18 not set audit time, it should be set as input time through 'consume_time' metadata field|
+| [INLONG-10628](https://github.com/apache/inlong/issues/10628) |[Feature][Sort] The end2end test env on flink1.18 has not implemented|
+| [INLONG-10630](https://github.com/apache/inlong/issues/10630) |[Feature][Sort] SQL Server source support report audit information exactly once|
+| [INLONG-10655](https://github.com/apache/inlong/issues/10655) |[Improve][Sort] Kafka and Pulsar Sink support parse stream separator|
+| [INLONG-10682](https://github.com/apache/inlong/issues/10682) |[Improve][Sort] Pulsar source sending audit information support exactly once and helper.validateExcept should add ExtractNode.INLONG_MSG|
+| [INLONG-10696](https://github.com/apache/inlong/issues/10696) |[Improve][Sort] StarRocks sink supports ignore json parse error|
+| [INLONG-10694](https://github.com/apache/inlong/issues/10694) |[Bug][Sort] Mysql-cdc source fails to convert timestamp type|
 
-### TubeMQ
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-4972](https://github.com/apache/inlong/issues/4972) | [Feature][TubeMQ] Add TubeMQ Command Tools stage/roadmap                                                                        |
-| [INLONG-8903](https://github.com/apache/inlong/issues/8903) | [Bug][TubeMQ][Sort] int64 not recognized by the compiler and Missing @Override annotations                                      |
-| [INLONG-8871](https://github.com/apache/inlong/issues/8871) | [Improve][TubeMQ] Use an error code in checkMessageAndStatus() to return the check result instead of throwing an exception      |
-| [INLONG-8812](https://github.com/apache/inlong/issues/8812) | [Improve][Tubemq] Missing parameter                                                                                             |
-| [INLONG-8793](https://github.com/apache/inlong/issues/8793) | [INLONG-8791][TubeMQ] Tubemq-client-go lacks log level configuration API                                                        |
-| [INLONG-8768](https://github.com/apache/inlong/issues/8768) | [Improve][TubeMQ] Adding restart-manager.sh for inlong-tubemq-manager                                                           |
-| [INLONG-8720](https://github.com/apache/inlong/issues/8720) | [Improve][TubeMQ] Some unused return params in WebParamaterUtils                                                                |
-| [INLONG-8717](https://github.com/apache/inlong/issues/8717) | [Bug][TubeMQ] Display wrong response message in TubeMQ master web panel                                                         |
-| [INLONG-8716](https://github.com/apache/inlong/issues/8716) | [Bug][TubeMQ] set error code 0 when it works                                                                                    |
-| [INLONG-8701](https://github.com/apache/inlong/issues/8701) | [Improve][TubeMQ] Master dashboard respond always true when some operation complete                                             |
+### Audit
+| <div style="width:150px">ISSUE</div>                          | <div style="width:950px">Summary</div>                                        |
+|:--------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [INLONG-10085](https://github.com/apache/inlong/issues/10085) |[Improve][Audit] Optimize the performance of audit-service|
+| [INLONG-10089](https://github.com/apache/inlong/issues/10089) |[Improve][Audit] Adjust the service configuration of Audit|
+| [INLONG-10122](https://github.com/apache/inlong/issues/10122) |[Improve][Audit] Update the apache_inlong_audit.sql to apache_inlong_audit_mysql.sql|
+| [INLONG-10132](https://github.com/apache/inlong/issues/10132) |[Improve][Audit] Clean up Elasticsearch and ClickHouse related code of audit-store|
+| [INLONG-10147](https://github.com/apache/inlong/issues/10147) |[Improve][Audit] Less usage costs when the Audit uses the MySQL as storage|
+| [INLONG-10171](https://github.com/apache/inlong/issues/10171) |[Improve][Audit] Update the standalone deploy scripts for the audit service|
+| [INLONG-10201](https://github.com/apache/inlong/issues/10201) |[Improve][Audit] Rename configuration variables|
+| [INLONG-10225](https://github.com/apache/inlong/issues/10225) |[Improve][Audit] Audit SDK provides the ability to automatically assign and manage Audit ID|
+| [INLONG-10242](https://github.com/apache/inlong/issues/10242) |[Improve][Audit] Audit SDK compatible with InLong Manager to manage audit items|
+| [INLONG-10263](https://github.com/apache/inlong/issues/10263) |[Improve][Audit] Solve the conflict between the jdbc.url parameter of Audit Store and the container environment variable|
+| [INLONG-10274](https://github.com/apache/inlong/issues/10274) |[Improve][Audit] The OpenAPI  of Audit Service returns the average transmission time|
+| [INLONG-10306](https://github.com/apache/inlong/issues/10306) |[Improve][Audit] Compatible with scenarios where the Audit Tag is empty|
+| [INLONG-10321](https://github.com/apache/inlong/issues/10321) |[Improve][Audit] Audit supports the Audit Proxy service discovery and management|
+| [INLONG-10321](https://github.com/apache/inlong/issues/10321) |[Improve][Audit] Audit supports the Audit Proxy service discovery and management|
+| [INLONG-10365](https://github.com/apache/inlong/issues/10365) |[Improve][Audit] Optimizing TCP sticky packets may lead to duplication of audit data|
+| [INLONG-10379](https://github.com/apache/inlong/issues/10379) |[Improve][Audit] Add HDFS Audit items in the Audit SDK|
+| [INLONG-10387](https://github.com/apache/inlong/issues/10387) |[Improve][Audit]  Audit SDK supports obtaining Audit-Proxy capabilities through InLong Manager|
+| [INLONG-10402](https://github.com/apache/inlong/issues/10402) |[Improve][Audit]  Audit Service supports the hourly Audit data one day ago|
+| [INLONG-10461](https://github.com/apache/inlong/issues/10461) |[Bug][Audit] Cause HttpHostConnectException for manager |
+| [INLONG-10470](https://github.com/apache/inlong/issues/10470) |[Improve][Audit]  Optimize Audit Proxy configuration update retry logic|
+| [INLONG-10478](https://github.com/apache/inlong/issues/10478) |[Improve][Audit] Default to enable audit for the Docker and Standalone deployment|
+| [INLONG-10480](https://github.com/apache/inlong/issues/10480) |[Improve][Audit] Audit Service  automatically manages MySQL partitions|
+| [INLONG-10481](https://github.com/apache/inlong/issues/10481) |[Improve][Audit] Optimize Audit domain management|
+| [INLONG-10687](https://github.com/apache/inlong/issues/10687) |[Improve][Audit] Independent the Audit items of Agent from module reconciliation|
+
 
 ### Other
-|                            ISSUE                            | Summary                                                                                                                         |
-|:-----------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------|
-| [INLONG-8614](https://github.com/apache/inlong/issues/8614) | [Bug][CI] Post maven cache failed for UT and build workflow service/ci                                                          |
-| [INLONG-8494](https://github.com/apache/inlong/issues/8494) | [Bug][CI] Caught IOException "No space left on device" for Analyze by CodeQL workflow                                           |
-| [INLONG-8846](https://github.com/apache/inlong/issues/8846) | [Improve][Doc] Add ASF DOAP File for InLong                                                                                     |
-| [INLONG-8543](https://github.com/apache/inlong/issues/8543) | [Bug][Docker] The path of the mysql connector is wrong when docker build service/docker                                         |
-| [INLONG-8533](https://github.com/apache/inlong/issues/8533) | [Improve][Docker] Add MySQL connector to the manager image service/docker                                                       |
-| [INLONG-8918](https://github.com/apache/inlong/issues/8918) | [Bug][Script] A script parameter error in bin/inlong-daemon                                                                     |
-| [INLONG-8690](https://github.com/apache/inlong/issues/8690) | [Improve][Security] TemporaryFolder on unix-like systems does not limit access to created files                                 |
-| [INLONG-8688](https://github.com/apache/inlong/issues/8688) | [Improve][Security] Incorrect Authorization in MySQL Connector Java                                                             |
-| [INLONG-8687](https://github.com/apache/inlong/issues/8687) | [Improve][Security] Apache Pulsar Java Client vulnerable to Improper Certificate Validation                                     |
-| [INLONG-8686](https://github.com/apache/inlong/issues/8686) | [Improve][Security] TemporaryFolder on unix-like systems does not limit access to created files                                 |
-| [INLONG-8685](https://github.com/apache/inlong/issues/8685) | [Improve][Security] Denial of service due to parser crash                                                                       |
-| [INLONG-8684](https://github.com/apache/inlong/issues/8684) | [Improve][Security] Vite Server Options (server.fs.deny) can be bypassed using double forward-slash (//)                        |
-| [INLONG-8683](https://github.com/apache/inlong/issues/8683) | [Improve][Security] OutOfMemoryError for large multipart without filename in Eclipse Jetty                                      |
-| [INLONG-8682](https://github.com/apache/inlong/issues/8682) | [Improve][Security] Guava vulnerable to insecure use of temporary directory                                                     |
-| [INLONG-8681](https://github.com/apache/inlong/issues/8681) | [Improve][Security] netty-handler SniHandler 16MB allocation                                                                    |
-| [INLONG-8934](https://github.com/apache/inlong/issues/8934) | [Feature][Distribution] Add Iceberg connectors into the bundle                                                                  |
-| [INLONG-8942](https://github.com/apache/inlong/issues/8942) | [Improve][Distribution]Support to merge all jar file of multiple modules in order to reduce version package size                |
-| [INLONG-8965](https://github.com/apache/inlong/issues/8965) | [Improve][Doc] Update the description for swagger API                                                                           |
+| <div style="width:150px">ISSUE</div>                          | <div style="width:950px">Summary</div>                                        |
+|:---------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [INLONG-10051](https://github.com/apache/inlong/issues/10051) |[Improve][Github] improve the pull request template|
+| [INLONG-10057](https://github.com/apache/inlong/issues/10057) |[Feature][Distribution] Support assembling flink 1.18 dependencies and connectors|
+| [INLONG-10064](https://github.com/apache/inlong/issues/10064) |[Feature][Tool] Support multi-version flinks in inlong-dev-toolkit|
+| [INLONG-10120](https://github.com/apache/inlong/issues/10120) |[Improve][CI] Update the actions/upload-artifact to V4|
+| [INLONG-10124](https://github.com/apache/inlong/issues/10124) |[Bug][deploy] In 1.12 the single-machine deployment fails|
+| [INLONG-10125](https://github.com/apache/inlong/issues/10125) |[Bug][Script] In 1.11 single-machine deployment, the agent module cannot be started|
+| [INLONG-10138](https://github.com/apache/inlong/issues/10138) |[Improve][CI] Node.js 16 actions are deprecated|
+| [INLONG-10160](https://github.com/apache/inlong/issues/10160) |[Improve][CVE] Elasticsearch vulnerable to Uncontrolled Resource Consumption|
+| [INLONG-10161](https://github.com/apache/inlong/issues/10161) |[Improve][CVE] Golang protojson.Unmarshal function infinite loop when unmarshaling certain forms of invalid JSON|
+| [INLONG-10162](https://github.com/apache/inlong/issues/10162) |[Improve][CVE] net/http, x/net/http2: close connections when receiving too many headers|
+| [INLONG-10205](https://github.com/apache/inlong/issues/10205) |[Improve][Script] Add the metrics.audit.proxy.hosts for standalone deployment|
+| [INLONG-10331](https://github.com/apache/inlong/issues/10331) |[Improve][CVE] Decompressors can crash the JVM and leak memory content in Aircompressor|
+| [INLONG-10582](https://github.com/apache/inlong/issues/10582) |[Improve][ASF] Disable merge and rebase merge|
+
+
+
+
+
+
+
+
+
+
+

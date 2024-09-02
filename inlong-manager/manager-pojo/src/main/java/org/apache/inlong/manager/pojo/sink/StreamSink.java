@@ -68,6 +68,9 @@ public abstract class StreamSink extends StreamNode {
     @ApiModelProperty("Sink name, unique in one stream.")
     private String sinkName;
 
+    @ApiModelProperty("Transform sql")
+    private String transformSql;
+
     @ApiModelProperty("Sink description")
     private String description;
 
@@ -102,10 +105,10 @@ public abstract class StreamSink extends StreamNode {
     @ApiModelProperty("Modifier")
     private String modifier;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "GMT+8")
     private Date createTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", timezone = "GMT+8")
     private Date modifyTime;
 
     @Builder.Default

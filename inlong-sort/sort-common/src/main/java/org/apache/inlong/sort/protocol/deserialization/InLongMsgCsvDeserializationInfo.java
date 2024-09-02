@@ -17,14 +17,21 @@
 
 package org.apache.inlong.sort.protocol.deserialization;
 
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonAlias;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonCreator;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.annotation.Nullable;
+
+import java.util.Objects;
+
 /**
  * It represents CSV format of InLongMsg(m=0).
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class InLongMsgCsvDeserializationInfo extends InLongMsgDeserializationInfo {
 
     private static final long serialVersionUID = 1499370571949888870L;
@@ -32,21 +39,34 @@ public class InLongMsgCsvDeserializationInfo extends InLongMsgDeserializationInf
     private final char delimiter;
 
     @JsonInclude(Include.NON_NULL)
+    @Nullable
+    private final Character escapeChar;
+
+    @JsonInclude(Include.NON_NULL)
     private final boolean deleteHeadDelimiter;
 
     public InLongMsgCsvDeserializationInfo(
-            @JsonProperty("tid") String tid,
+            @JsonProperty("streamId") @JsonAlias(value = {"tid"}) String streamId,
             @JsonProperty("delimiter") char delimiter) {
-        this(tid, delimiter, true);
+        this(streamId, delimiter, null, false);
+    }
+
+    public InLongMsgCsvDeserializationInfo(
+            @JsonProperty("streamId") @JsonAlias(value = {"tid"}) String streamId,
+            @JsonProperty("delimiter") char delimiter,
+            @JsonProperty("delete_head_delimiter") boolean deleteHeadDelimiter) {
+        this(streamId, delimiter, null, deleteHeadDelimiter);
     }
 
     @JsonCreator
     public InLongMsgCsvDeserializationInfo(
-            @JsonProperty("tid") String tid,
+            @JsonProperty("streamId") @JsonAlias(value = {"tid"}) String streamId,
             @JsonProperty("delimiter") char delimiter,
+            @JsonProperty("escape_char") @Nullable Character escapeChar,
             @JsonProperty("delete_head_delimiter") boolean deleteHeadDelimiter) {
-        super(tid);
+        super(streamId);
         this.delimiter = delimiter;
+        this.escapeChar = escapeChar;
         this.deleteHeadDelimiter = deleteHeadDelimiter;
     }
 
@@ -55,8 +75,31 @@ public class InLongMsgCsvDeserializationInfo extends InLongMsgDeserializationInf
         return delimiter;
     }
 
+    @JsonProperty("escape_char")
+    @Nullable
+    public Character getEscapeChar() {
+        return escapeChar;
+    }
+
     @JsonProperty("delete_head_delimiter")
     public boolean isDeleteHeadDelimiter() {
         return deleteHeadDelimiter;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        InLongMsgCsvDeserializationInfo other = (InLongMsgCsvDeserializationInfo) o;
+        return super.equals(other)
+                && delimiter == other.delimiter
+                && Objects.equals(escapeChar, other.escapeChar)
+                && deleteHeadDelimiter == other.deleteHeadDelimiter;
     }
 }

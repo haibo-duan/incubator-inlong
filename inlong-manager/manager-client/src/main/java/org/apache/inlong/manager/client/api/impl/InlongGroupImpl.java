@@ -117,7 +117,7 @@ public class InlongGroupImpl implements InlongGroup {
     @Override
     public InlongGroupContext init() throws Exception {
         InlongGroupInfo groupInfo = this.groupContext.getGroupInfo();
-        WorkflowResult initWorkflowResult = groupClient.initInlongGroup(groupInfo.genRequest());
+        WorkflowResult initWorkflowResult = groupClient.startProcess(groupInfo.genRequest());
         List<TaskResponse> taskViews = initWorkflowResult.getNewTasks();
         Preconditions.expectNotEmpty(taskViews, "init inlong group info failed");
         TaskResponse taskView = taskViews.get(0);
@@ -242,7 +242,7 @@ public class InlongGroupImpl implements InlongGroup {
         }
         boolean isDeleted = groupClient.deleteInlongGroup(groupInfo.getInlongGroupId(), async);
         if (isDeleted) {
-            groupInfo.setStatus(GroupStatus.DELETED.getCode());
+            groupInfo.setStatus(GroupStatus.CONFIG_DELETED.getCode());
         }
         return generateSnapshot();
     }
@@ -277,7 +277,7 @@ public class InlongGroupImpl implements InlongGroup {
         // if current group is not exists, set its status to deleted
         if (groupInfo == null) {
             groupInfo = groupContext.getGroupInfo();
-            groupInfo.setStatus(GroupStatus.DELETED.getCode());
+            groupInfo.setStatus(GroupStatus.CONFIG_DELETED.getCode());
             return new InlongGroupContext(groupContext);
         }
 

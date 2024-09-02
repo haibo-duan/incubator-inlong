@@ -39,7 +39,6 @@ import org.apache.flink.table.factories.FactoryUtil;
 import org.apache.flink.table.factories.SerializationFormatFactory;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.RowKind;
-import org.apache.pulsar.common.naming.TopicName;
 
 import javax.annotation.Nullable;
 
@@ -80,6 +79,8 @@ import static org.apache.flink.table.factories.FactoryUtil.SINK_PARALLELISM;
 import static org.apache.inlong.sort.base.Constants.AUDIT_KEYS;
 import static org.apache.inlong.sort.base.Constants.INLONG_AUDIT;
 import static org.apache.inlong.sort.base.Constants.INLONG_METRIC;
+import static org.apache.inlong.sort.base.Constants.PULSAR_AUTH_PARAMS;
+import static org.apache.inlong.sort.base.Constants.PULSAR_CLIENT_AUTH_PLUGIN_CLASSNAME;
 
 /**
  * Copy from io.streamnative.connectors:pulsar-flink-connector_2.11:1.13.6.1-rc9
@@ -163,7 +164,7 @@ public class PulsarDynamicTableFactory
         FactoryUtil.TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
         ReadableConfig tableOptions = helper.getOptions();
 
-        List<String> topics = generateTopic(context.getObjectIdentifier(), tableOptions);
+        List<String> topics = generateTopic(tableOptions);
         if (topics != null && !topics.isEmpty()) {
             ((Configuration) tableOptions).set(TOPIC, Collections.singletonList(topics.get(0)));
         }
@@ -231,7 +232,7 @@ public class PulsarDynamicTableFactory
         FactoryUtil.TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
         ReadableConfig tableOptions = helper.getOptions();
 
-        List<String> topics = generateTopic(context.getObjectIdentifier(), tableOptions);
+        List<String> topics = generateTopic(tableOptions);
         if (topics != null && !topics.isEmpty()) {
             ((Configuration) tableOptions).set(TOPIC, Collections.singletonList(topics.get(0)));
         }
@@ -334,21 +335,14 @@ public class PulsarDynamicTableFactory
         options.add(INLONG_METRIC);
         options.add(INLONG_AUDIT);
         options.add(AUDIT_KEYS);
+        options.add(PULSAR_AUTH_PARAMS);
+        options.add(PULSAR_CLIENT_AUTH_PLUGIN_CLASSNAME);
 
         return options;
     }
 
-    private List<String> generateTopic(ObjectIdentifier table, ReadableConfig tableOptions) {
-        List<String> topics = null;
-        if (tableOptions.get(GENERIC)) {
-            topics = tableOptions.getOptional(TOPIC).orElse(null);
-        } else {
-            String rawTopic = table.getDatabaseName() + "/" + table.getObjectName();
-            final String topic = TopicName.get(rawTopic).toString();
-            topics = Collections.singletonList(topic);
-        }
-
-        return topics;
+    private List<String> generateTopic(ReadableConfig tableOptions) {
+        return tableOptions.getOptional(TOPIC).orElse(null);
     }
 
     // --------------------------------------------------------------------------------------------

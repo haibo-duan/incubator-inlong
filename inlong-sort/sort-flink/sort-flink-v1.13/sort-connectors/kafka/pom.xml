@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.inlong</groupId>
         <artifactId>sort-connectors-v1.13</artifactId>
-        <version>1.10.0-SNAPSHOT</version>
+        <version>1.14.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>sort-connector-kafka</artifactId>
@@ -75,7 +75,8 @@
                                     <include>org.apache.inlong:*</include>
                                     <include>org.apache.kafka:*</include>
                                     <include>com.google.protobuf:*</include>
-                                    <include>org.apache.flink:flink-connector-kafka_${scala.binary.version}</include>
+                                    <include>org.apache.flink:flink-connector-kafka_${flink.scala.binary.version}</include>
+                                    <include>org.apache.flink:flink-connector-base</include>
                                     <include>com.amazonaws:*</include>
                                     <include>com.fasterxml.jackson.core:*</include>
                                     <include>commons-logging:commons-logging</include>

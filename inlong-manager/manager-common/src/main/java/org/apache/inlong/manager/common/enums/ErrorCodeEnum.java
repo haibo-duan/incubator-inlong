@@ -68,9 +68,12 @@ public enum ErrorCodeEnum {
     CLUSTER_INFO_INCORRECT(1103, "Cluster info was incorrect"),
     CLUSTER_TAG_NOT_FOUND(1104, "Cluster tag information does not exist"),
 
+    TENANT_CLUSTER_TAG_NOT_FOUND(1105, "Tenant Cluster tag does not exist"),
+
     DATA_NODE_NOT_FOUND(1150, "Data node information does not exist"),
     DATA_NODE_TYPE_NOT_SUPPORTED(1151, "Data node type '%s' not supported"),
     DATA_NODE_ID_CHANGED(1152, "Data node information's id not equals"),
+    DATA_NODE_INFO_INCORRECT(1153, "Data node info was incorrect"),
 
     STREAM_NOT_FOUND(1201, "Inlong stream does not exist/no operation permission"),
     STREAM_ID_DUPLICATE(1202, "The current inlong group has a inlong stream with the same ID"),
@@ -122,6 +125,15 @@ public enum ErrorCodeEnum {
     MQ_TYPE_IS_NULL(1600, "MQ type is null"),
     MQ_TYPE_NOT_SUPPORT(1601, "MQ type '%s' not support"),
 
+    SCHEDULE_NOT_FOUND(1700, "Schedule info not found"),
+    SCHEDULE_DUPLICATE(1701, "Schedule info already exist"),
+    SCHEDULE_ENGINE_NOT_SUPPORTED(1702, "Schedule engine type not supported"),
+    SCHEDULE_STATUS_TRANSITION_NOT_ALLOWED(1703, "Schedule status transition is not allowed"),
+
+    BOUNDED_SOURCE_TYPE_NOT_SUPPORTED(1801, "Bounded source type %s not supported"),
+    BOUNDARY_TYPE_NOT_SUPPORTED(1802, "Boundary type %s not supported"),
+    BOUNDARIES_NOT_FOUND(1803, "Boundaries not found"),
+
     WORKFLOW_EXE_FAILED(4000, "Workflow execution exception"),
     WORKFLOW_APPROVER_NOT_FOUND(4001, "Workflow approver does not exist/no operation authority"),
     WORKFLOW_DELETE_RECORD_FAILED(4002, "Workflow delete record failure"),
@@ -149,8 +161,23 @@ public enum ErrorCodeEnum {
 
     AUDIT_ID_TYPE_NOT_SUPPORTED(4001, "Audit id type '%s' not supported"),
 
+    AUDIT_SOURCE_TYPE_NOT_SUPPORTED(4002, "Audit Source type '%s' not supported"),
+
+    AUDIT_SOURCE_URL_NOT_SUPPORTED(4003, "Audit Source URL '%s' not supported"),
+
     TENANT_NOT_EXIST(5001, "Tenant '%s' is not exist"),
-    ;
+
+    MODULE_NOT_FOUND(6001, "Module does not exist/no operation authority"),
+    MODULE_INFO_INCORRECT(6002, "Module info was incorrect"),
+
+    PACKAGE_NOT_FOUND(7001, "Package does not exist/no operation authority"),
+    PACKAGE_INFO_INCORRECT(7002, "Package info was incorrect"),
+
+    TEMPLATE_NOT_FOUND(8001, "Template does not exist/no operation authority"),
+    TEMPLATE_NAME_DUPLICATE(8002, "The current template name is exist"),
+    TEMPLATE_INFO_INCORRECT(8003, "Template info was incorrect"),
+    TEMPLATE_FIELD_UPDATE_NOT_ALLOWED(8004, "Current status not allowed to modification/delete field"),
+    TEMPLATE_PERMISSION_DENIED(8005, "No permission to this inlong template");
 
     private final int code;
     private final String message;

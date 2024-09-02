@@ -17,13 +17,14 @@
 
 package org.apache.inlong.manager.plugin.flink;
 
+import org.apache.inlong.manager.common.consts.InlongConstants;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
 import org.apache.inlong.manager.plugin.flink.dto.FlinkConfig;
 import org.apache.inlong.manager.plugin.flink.dto.FlinkInfo;
 import org.apache.inlong.manager.plugin.flink.dto.StopWithSavepointRequest;
 import org.apache.inlong.manager.plugin.flink.enums.Constants;
-import org.apache.inlong.manager.plugin.util.FlinkConfiguration;
-import org.apache.inlong.manager.plugin.util.FlinkServiceUtils;
+import org.apache.inlong.manager.plugin.util.ApplicationContextProvider;
+import org.apache.inlong.manager.plugin.util.FlinkUtils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -62,56 +63,53 @@ public class FlinkService {
     private static final Pattern IP_PORT_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+):(\\d+)");
 
     private final FlinkConfig flinkConfig;
-    private final Integer parallelism;
+    private Integer parallelism;
     private final String savepointDirectory;
-    private final Configuration configuration;
-    private final FlinkClientService clientService;
+    // map endpoint to Configuration
+    private final Map<String, Configuration> configurations = new HashMap<>();
+    // map Configuration to FlinkClientService
+    private final Map<Configuration, FlinkClientService> flinkClientServices = new HashMap<>();
+
+    private final FlinkParallelismOptimizer flinkParallelismOptimizer;
 
     /**
      * Constructor of FlinkService.
      */
-    public FlinkService(String endpoint) throws Exception {
-        FlinkConfiguration flinkConfiguration = new FlinkConfiguration();
-        flinkConfig = flinkConfiguration.getFlinkConfig();
+    public FlinkService() throws Exception {
+        flinkConfig = FlinkUtils.getFlinkConfigFromFile();
         parallelism = flinkConfig.getParallelism();
         savepointDirectory = flinkConfig.getSavepointDirectory();
+        // let spring inject the bean
+        flinkParallelismOptimizer = ApplicationContextProvider.getContext().getBean(FlinkParallelismOptimizer.class);
+    }
 
-        configuration = new Configuration();
-        Integer jobManagerPort = flinkConfig.getJobManagerPort();
-        configuration.setInteger(JobManagerOptions.PORT, jobManagerPort);
+    private static class FlinkServiceHolder {
 
-        Integer port;
-        String address;
-        if (StringUtils.isEmpty(endpoint)) {
-            address = flinkConfig.getAddress();
-            port = flinkConfig.getPort();
-        } else {
-            Map<String, String> ipPort = translateFromEndpoint(endpoint);
-            if (ipPort.isEmpty()) {
-                throw new BusinessException("get address:port failed from endpoint " + endpoint);
+        private static final FlinkService INSTANCE;
+        static {
+            try {
+                INSTANCE = new FlinkService();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-            address = ipPort.get("address");
-            port = Integer.valueOf(ipPort.get("port"));
         }
-        configuration.setString(JobManagerOptions.ADDRESS, address);
-        configuration.setInteger(RestOptions.PORT, port);
+    }
 
-        clientService = (FlinkClientService) FlinkServiceUtils.getFlinkClientService(configuration, flinkConfig);
+    public static FlinkService getInstance() {
+        return FlinkServiceHolder.INSTANCE;
     }
 
     /**
      * Translate the Endpoint to address & port
      */
-    private Map<String, String> translateFromEndpoint(String endpoint) throws Exception {
+    private Map<String, String> translateFromEndpoint(String endpoint) {
         Map<String, String> map = new HashMap<>(2);
         Matcher matcher = IP_PORT_PATTERN.matcher(endpoint);
         if (matcher.find()) {
             map.put("address", matcher.group(1));
             map.put("port", matcher.group(2));
-            return map;
-        } else {
-            throw new Exception("endpoint [" + endpoint + "] was not match address:port");
         }
+        return map;
     }
 
     /**
@@ -124,15 +122,52 @@ public class FlinkService {
     /**
      * Get the job status by the given job id.
      */
-    public JobStatus getJobStatus(String jobId) throws Exception {
-        return clientService.getJobStatus(jobId);
+    public JobStatus getJobStatus(String endpoint, String jobId) throws Exception {
+        Configuration configuration = getFlinkConfiguration(endpoint);
+        return getFlinkClientService(configuration).getJobStatus(jobId);
+    }
+
+    public JobStatus getJobStatus(FlinkInfo flinkInfo) throws Exception {
+        Configuration configuration = getFlinkConfiguration(flinkInfo.getEndpoint());
+        return getFlinkClientService(configuration).getJobStatus(flinkInfo.getJobId());
+    }
+
+    private FlinkClientService getFlinkClientService(Configuration configuration) {
+        return flinkClientServices.computeIfAbsent(configuration,
+                k -> (FlinkClientService) FlinkUtils.getFlinkClientService(configuration, flinkConfig));
+    }
+
+    private Configuration getFlinkConfiguration(String endpoint) {
+        return configurations.computeIfAbsent(endpoint,
+                k -> {
+                    Integer port;
+                    String address;
+                    if (StringUtils.isEmpty(endpoint)) {
+                        address = flinkConfig.getAddress();
+                        port = flinkConfig.getPort();
+                    } else {
+                        Map<String, String> ipPort = translateFromEndpoint(endpoint);
+                        if (ipPort.isEmpty()) {
+                            throw new BusinessException("get address:port failed from endpoint " + endpoint);
+                        }
+                        address = ipPort.get("address");
+                        port = Integer.valueOf(ipPort.get("port"));
+                    }
+                    // build flink configuration
+                    Configuration configuration = new Configuration();
+                    configuration.setInteger(JobManagerOptions.PORT, flinkConfig.getJobManagerPort());
+                    configuration.setString(JobManagerOptions.ADDRESS, address);
+                    configuration.setInteger(RestOptions.PORT, port);
+                    return configuration;
+                });
     }
 
     /**
      * Get job detail by the given job id.
      */
-    public JobDetailsInfo getJobDetail(String jobId) throws Exception {
-        return clientService.getJobDetail(jobId);
+    public JobDetailsInfo getJobDetail(FlinkInfo flinkInfo) throws Exception {
+        Configuration configuration = getFlinkConfiguration(flinkInfo.getEndpoint());
+        return getFlinkClientService(configuration).getJobDetail(flinkInfo.getJobId());
     }
 
     /**
@@ -182,6 +217,23 @@ public class FlinkService {
             }
         }).filter(Objects::nonNull).collect(Collectors.toList());
 
+        Configuration configuration = getFlinkConfiguration(flinkInfo.getEndpoint());
+        log.debug("flink info: {}", flinkInfo);
+        if (flinkConfig.getDynamicParallelismEnable()) {
+            flinkParallelismOptimizer.setMaximumMessagePerSecondPerCore(flinkConfig.getMaxMsgRatePerCore());
+            // get stream info list for auditing
+            int recommendedParallelism =
+                    flinkParallelismOptimizer.calculateRecommendedParallelism(flinkInfo.getInlongStreamInfoList());
+            // Ensure parallelism is at least the default value
+            recommendedParallelism = recommendedParallelism < parallelism ? parallelism : recommendedParallelism;
+
+            if (recommendedParallelism != parallelism) {
+                log.info("switched to recommended parallelism: {}", recommendedParallelism);
+                parallelism = recommendedParallelism;
+            }
+        }
+        log.info("current parallelism: {}", parallelism);
+
         PackagedProgram program = PackagedProgram.newBuilder()
                 .setConfiguration(configuration)
                 .setEntryPointClassName(Constants.ENTRYPOINT_CLASS)
@@ -192,7 +244,7 @@ public class FlinkService {
         JobGraph jobGraph = PackagedProgramUtils.createJobGraph(program, configuration, parallelism, false);
         jobGraph.addJars(connectorJars);
 
-        RestClusterClient<StandaloneClusterId> client = clientService.getFlinkClient();
+        RestClusterClient<StandaloneClusterId> client = getFlinkClientService(configuration).getFlinkClient();
         CompletableFuture<JobID> result = client.submitJob(jobGraph);
         return result.get().toString();
     }
@@ -200,15 +252,18 @@ public class FlinkService {
     /**
      * Stop the Flink job with the savepoint.
      */
-    public String stopJob(String jobId, StopWithSavepointRequest request) throws Exception {
-        return clientService.stopJob(jobId, request.isDrain(), request.getTargetDirectory());
+    public String stopJob(FlinkInfo flinkInfo, StopWithSavepointRequest request) throws Exception {
+        Configuration configuration = getFlinkConfiguration(flinkInfo.getEndpoint());
+        return getFlinkClientService(configuration).stopJob(flinkInfo.getJobId(), request.isDrain(),
+                request.getTargetDirectory());
     }
 
     /**
      * Cancel the Flink job.
      */
-    public void cancelJob(String jobId) throws Exception {
-        clientService.cancelJob(jobId);
+    public void cancelJob(FlinkInfo flinkInfo) throws Exception {
+        Configuration configuration = getFlinkConfiguration(flinkInfo.getEndpoint());
+        getFlinkClientService(configuration).cancelJob(flinkInfo.getJobId());
     }
 
     /**
@@ -224,8 +279,16 @@ public class FlinkService {
         list.add(flinkInfo.getLocalConfPath());
         list.add("-checkpoint.interval");
         list.add("60000");
-        list.add("-metrics.audit.proxy.hosts");
-        list.add(flinkConfig.getAuditProxyHosts());
+        if (InlongConstants.RUNTIME_EXECUTION_MODE_BATCH.equalsIgnoreCase(flinkInfo.getRuntimeExecutionMode())) {
+            list.add("-runtime.execution.mode");
+            list.add(flinkInfo.getRuntimeExecutionMode());
+            list.add("-source.boundary.type");
+            list.add(flinkInfo.getBoundaryType());
+            list.add("-source.lower.boundary");
+            list.add(flinkInfo.getLowerBoundary());
+            list.add("-source.upper.boundary");
+            list.add(flinkInfo.getUpperBoundary());
+        }
         return list.toArray(new String[0]);
     }
 

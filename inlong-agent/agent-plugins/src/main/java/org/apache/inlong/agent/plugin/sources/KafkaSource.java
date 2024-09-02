@@ -17,124 +17,164 @@
 
 package org.apache.inlong.agent.plugin.sources;
 
-import org.apache.inlong.agent.conf.JobProfile;
-import org.apache.inlong.agent.plugin.Reader;
-import org.apache.inlong.agent.plugin.sources.reader.KafkaReader;
+import org.apache.inlong.agent.conf.InstanceProfile;
+import org.apache.inlong.agent.except.FileException;
+import org.apache.inlong.agent.plugin.sources.file.AbstractSource;
 
-import com.google.gson.Gson;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.inlong.agent.constant.JobConstants.DEFAULT_JOB_LINE_FILTER;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_ID;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_KAFKA_AUTO_COMMIT_OFFSET_RESET;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_KAFKA_BOOTSTRAP_SERVERS;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_KAFKA_GROUP_ID;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_KAFKA_OFFSET;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_KAFKA_PARTITION_OFFSET_DELIMITER;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_KAFKA_TOPIC;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_LINE_FILTER_PATTERN;
-import static org.apache.inlong.agent.constant.JobConstants.JOB_OFFSET_DELIMITER;
+import static org.apache.inlong.agent.constant.TaskConstants.RESTORE_FROM_DB;
+import static org.apache.inlong.agent.constant.TaskConstants.TASK_KAFKA_AUTO_COMMIT_OFFSET_RESET;
+import static org.apache.inlong.agent.constant.TaskConstants.TASK_KAFKA_BOOTSTRAP_SERVERS;
+import static org.apache.inlong.agent.constant.TaskConstants.TASK_KAFKA_OFFSET;
+import static org.apache.inlong.agent.constant.TaskConstants.TASK_KAFKA_OFFSET_DELIMITER;
+import static org.apache.inlong.agent.constant.TaskConstants.TASK_KAFKA_PARTITION_OFFSET_DELIMITER;
 
 /**
  * kafka source, split kafka source job into multi readers
  */
 public class KafkaSource extends AbstractSource {
 
-    public static final String JOB_KAFKA_AUTO_RESETE = "auto.offset.reset";
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaSource.class);
-    private static final String JOB_KAFKAJOB_PARAM_PREFIX = "job.kafkaJob.";
-    private static final String JOB_KAFKAJOB_WAIT_TIMEOUT = "job.kafkajob.wait.timeout";
-    private static final String KAFKA_COMMIT_AUTO = "enable.auto.commit";
+    private String topic;
+    private Properties props = new Properties();
+    private String allPartitionOffsets;
+    Map<Integer, Long> partitionOffsets = new HashMap<>();
     private static final String KAFKA_DESERIALIZER_METHOD =
             "org.apache.kafka.common.serialization.ByteArrayDeserializer";
-    private static final String KAFKA_KEY_DESERIALIZER = "key.deserializer";
-    private static final String KAFKA_VALUE_DESERIALIZER = "value.deserializer";
     private static final String KAFKA_SESSION_TIMEOUT = "session.timeout.ms";
-    private static final Gson gson = new Gson();
-    private static AtomicLong metricsIndex = new AtomicLong(0);
+    private boolean isRestoreFromDB = false;
+    private KafkaConsumer<String, byte[]> kafkaConsumer;
+    private long offset = 0L;
 
     public KafkaSource() {
     }
 
     @Override
-    public List<Reader> split(JobProfile conf) {
-        super.init(conf);
-        List<Reader> result = new ArrayList<>();
-        String filterPattern = conf.get(JOB_LINE_FILTER_PATTERN, DEFAULT_JOB_LINE_FILTER);
+    protected void initSource(InstanceProfile profile) {
+        try {
+            LOGGER.info("KafkaSource init: {}", profile.toJsonStr());
+            topic = profile.getInstanceId();
+            props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, profile.get(TASK_KAFKA_BOOTSTRAP_SERVERS));
+            props.put(ConsumerConfig.GROUP_ID_CONFIG, taskId);
+            props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, KAFKA_DESERIALIZER_METHOD);
+            props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KAFKA_DESERIALIZER_METHOD);
+            props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, profile.get(TASK_KAFKA_AUTO_COMMIT_OFFSET_RESET));
+            props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 
-        Properties props = new Properties();
-        Map<String, String> map = gson.fromJson(conf.toJsonStr(), Map.class);
-        props.put(JOB_KAFKA_BOOTSTRAP_SERVERS.replace(JOB_KAFKAJOB_PARAM_PREFIX, StringUtils.EMPTY),
-                map.get(JOB_KAFKA_BOOTSTRAP_SERVERS));
-
-        props.put(KAFKA_KEY_DESERIALIZER, KAFKA_DESERIALIZER_METHOD);
-        props.put(KAFKA_VALUE_DESERIALIZER, KAFKA_DESERIALIZER_METHOD);
-        // set offset
-        props.put(KAFKA_COMMIT_AUTO, false);
-        if (ObjectUtils.isNotEmpty(map.get(JOB_KAFKA_AUTO_COMMIT_OFFSET_RESET))) {
-            props.put(JOB_KAFKA_AUTO_RESETE, map.get(JOB_KAFKA_AUTO_COMMIT_OFFSET_RESET));
-        }
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
-        List<PartitionInfo> partitionInfoList = consumer.partitionsFor(conf.get(JOB_KAFKA_TOPIC));
-        String allPartitionOffsets = map.get(JOB_KAFKA_OFFSET);
-        Long offset = null;
-        String[] partitionOffsets = null;
-        if (StringUtils.isNotBlank(allPartitionOffsets)) {
-            // example:0#110_1#666_2#222
-            partitionOffsets = allPartitionOffsets.split(JOB_OFFSET_DELIMITER);
-        }
-        // set consumer session timeout
-        props.put(KAFKA_SESSION_TIMEOUT, 30000);
-        // spilt reader reduce to partition
-        if (null != partitionInfoList) {
-            for (PartitionInfo partitionInfo : partitionInfoList) {
-                props.put(JOB_KAFKA_GROUP_ID.replace(JOB_KAFKAJOB_PARAM_PREFIX, StringUtils.EMPTY),
-                        map.getOrDefault(JOB_KAFKA_GROUP_ID,
-                                map.get(JOB_ID) + JOB_OFFSET_DELIMITER
-                                        + "group" + partitionInfo.partition()));
-                KafkaConsumer<String, byte[]> partitonConsumer = new KafkaConsumer<>(props);
-                partitonConsumer.assign(Collections.singletonList(
-                        new TopicPartition(partitionInfo.topic(), partitionInfo.partition())));
-                // if get offset,consume from offset; if not,consume from 0
-                if (partitionOffsets != null && partitionOffsets.length > 0) {
-                    for (String partitionOffset : partitionOffsets) {
-                        if (partitionOffset.contains(JOB_KAFKA_PARTITION_OFFSET_DELIMITER)
-                                && partitionOffset.split(JOB_KAFKA_PARTITION_OFFSET_DELIMITER)[0]
-                                        .equals(String.valueOf(partitionInfo.partition()))) {
-                            offset = Long.valueOf(partitionOffset.split(JOB_KAFKA_PARTITION_OFFSET_DELIMITER)[1]);
-                        }
-                    }
+            allPartitionOffsets = profile.get(TASK_KAFKA_OFFSET, null);
+            isRestoreFromDB = profile.getBoolean(RESTORE_FROM_DB, false);
+            if (!isRestoreFromDB && StringUtils.isNotBlank(allPartitionOffsets)) {
+                // example:0#110_1#666_2#222
+                String[] offsets = allPartitionOffsets.split(TASK_KAFKA_OFFSET_DELIMITER);
+                for (String offset : offsets) {
+                    partitionOffsets.put(Integer.valueOf(offset.split(TASK_KAFKA_PARTITION_OFFSET_DELIMITER)[0]),
+                            Long.valueOf(offset.split(TASK_KAFKA_PARTITION_OFFSET_DELIMITER)[1]));
                 }
-                LOGGER.info("kafka topic partition offset:{}", offset);
-                if (offset != null) {
-                    // if offset not null,then consume from the offset
-                    partitonConsumer.seek(new TopicPartition(partitionInfo.topic(), partitionInfo.partition()), offset);
-                }
-                KafkaReader<String, byte[]> kafkaReader = new KafkaReader<>(partitonConsumer, map);
-                addValidator(filterPattern, kafkaReader);
-                result.add(kafkaReader);
             }
-            sourceMetric.sourceSuccessCount.incrementAndGet();
-        } else {
-            sourceMetric.sourceFailCount.incrementAndGet();
+            kafkaConsumer = getKafkaConsumer();
+        } catch (Exception ex) {
+            stopRunning();
+            throw new FileException("error init stream for " + topic, ex);
         }
-        return result;
     }
 
-    private void addValidator(String filterPattern, KafkaReader kafkaReader) {
-        kafkaReader.addPatternValidator(filterPattern);
+    @Override
+    protected String getThreadName() {
+        return "kafka-source-" + taskId + "-" + instanceId;
+    }
+
+    @Override
+    protected boolean doPrepareToRead() {
+        return true;
+    }
+
+    @Override
+    protected List<SourceData> readFromSource() {
+        List<SourceData> dataList = new ArrayList<>();
+        ConsumerRecords<String, byte[]> records = kafkaConsumer.poll(Duration.ofMillis(1000));
+        for (ConsumerRecord<String, byte[]> record : records) {
+            SourceData sourceData = new SourceData(record.value(), Long.toString(record.offset()));
+            dataList.add(sourceData);
+            offset = record.offset();
+        }
+        kafkaConsumer.commitSync();
+        return dataList;
+    }
+
+    private KafkaConsumer<String, byte[]> getKafkaConsumer() {
+        List<PartitionInfo> partitionInfoList;
+        KafkaConsumer<String, byte[]> kafkaConsumer = null;
+        props.put(KAFKA_SESSION_TIMEOUT, 30000);
+        try {
+            kafkaConsumer = new KafkaConsumer<>(props);
+            partitionInfoList = kafkaConsumer.partitionsFor(topic);
+            if (partitionInfoList == null) {
+                kafkaConsumer.close();
+                return null;
+            }
+            List<TopicPartition> topicPartitions = new ArrayList<>();
+            for (PartitionInfo partitionInfo : partitionInfoList) {
+                TopicPartition topicPartition = new TopicPartition(partitionInfo.topic(),
+                        partitionInfo.partition());
+                topicPartitions.add(topicPartition);
+            }
+            kafkaConsumer.assign(topicPartitions);
+            if (!isRestoreFromDB && StringUtils.isNotBlank(allPartitionOffsets)) {
+                for (TopicPartition topicPartition : topicPartitions) {
+                    Long offset = partitionOffsets.get(topicPartition.partition());
+                    if (ObjectUtils.isNotEmpty(offset)) {
+                        kafkaConsumer.seek(topicPartition, offset);
+                    }
+                }
+            } else {
+                LOGGER.info("Skip to seek offset");
+            }
+            return kafkaConsumer;
+        } catch (Exception e) {
+            if (kafkaConsumer != null) {
+                kafkaConsumer.close();
+            }
+            LOGGER.error("get kafka consumer error", e);
+        }
+        return null;
+    }
+
+    @Override
+    protected void printCurrentState() {
+        LOGGER.info("kafka topic is {}, offset is {}", topic, offset);
+    }
+
+    @Override
+    protected boolean isRunnable() {
+        return runnable;
+    }
+
+    @Override
+    public boolean sourceExist() {
+        return true;
+    }
+
+    @Override
+    protected void releaseSource() {
+        if (kafkaConsumer != null) {
+            kafkaConsumer.close();
+        }
     }
 }

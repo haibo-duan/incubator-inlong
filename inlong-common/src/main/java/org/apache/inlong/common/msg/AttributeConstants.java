@@ -36,11 +36,6 @@ public interface AttributeConstants {
     String STREAM_ID = "streamId";
 
     /**
-     * iname is like a streamId but used in file protocol(m=xxx)
-     */
-    String INAME = "iname";
-
-    /**
      * data time
      */
     String DATA_TIME = "dt";
@@ -108,5 +103,8 @@ public interface AttributeConstants {
     // the downstream by the Bus without modification for the downstream to
     // calculate the end-to-end message delay; if this field does not exist in the request,
     // it will be added by the Bus with the current time
-    public static final String MSG_RPT_TIME = "rtms";
+    String MSG_RPT_TIME = "rtms";
+
+    // Audit version is used for audit to reconciliation
+    String AUDIT_VERSION = "auditVersion";
 }

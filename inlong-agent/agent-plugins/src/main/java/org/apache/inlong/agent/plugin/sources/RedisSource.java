@@ -17,14 +17,13 @@
 
 package org.apache.inlong.agent.plugin.sources;
 
-import org.apache.inlong.agent.conf.JobProfile;
-import org.apache.inlong.agent.plugin.Reader;
-import org.apache.inlong.agent.plugin.sources.reader.RedisReader;
+import org.apache.inlong.agent.conf.InstanceProfile;
+import org.apache.inlong.agent.plugin.Message;
+import org.apache.inlong.agent.plugin.sources.file.AbstractSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,13 +38,52 @@ public class RedisSource extends AbstractSource {
     }
 
     @Override
-    public List<Reader> split(JobProfile conf) {
-        super.init(conf);
-        RedisReader redisReader = new RedisReader();
-        redisReader.setReadSource(conf.getInstanceId());
-        List<Reader> readerList = new ArrayList<>();
-        readerList.add(redisReader);
-        sourceMetric.sourceSuccessCount.incrementAndGet();
-        return readerList;
+    protected String getThreadName() {
+        return null;
+    }
+
+    @Override
+    protected void initSource(InstanceProfile profile) {
+
+    }
+
+    @Override
+    protected void printCurrentState() {
+
+    }
+
+    @Override
+    protected boolean doPrepareToRead() {
+        return false;
+    }
+
+    @Override
+    protected List<SourceData> readFromSource() {
+        return null;
+    }
+
+    @Override
+    public Message read() {
+        return null;
+    }
+
+    @Override
+    protected boolean isRunnable() {
+        return runnable;
+    }
+
+    @Override
+    protected void releaseSource() {
+
+    }
+
+    @Override
+    public boolean sourceFinish() {
+        return false;
+    }
+
+    @Override
+    public boolean sourceExist() {
+        return false;
     }
 }

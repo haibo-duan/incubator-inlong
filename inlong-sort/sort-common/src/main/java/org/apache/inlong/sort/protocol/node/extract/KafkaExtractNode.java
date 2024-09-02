@@ -27,6 +27,7 @@ import org.apache.inlong.sort.protocol.node.ExtractNode;
 import org.apache.inlong.sort.protocol.node.format.AvroFormat;
 import org.apache.inlong.sort.protocol.node.format.CsvFormat;
 import org.apache.inlong.sort.protocol.node.format.Format;
+import org.apache.inlong.sort.protocol.node.format.InLongMsgFormat;
 import org.apache.inlong.sort.protocol.node.format.JsonFormat;
 import org.apache.inlong.sort.protocol.transformation.WatermarkField;
 
@@ -118,7 +119,7 @@ public class KafkaExtractNode extends ExtractNode implements InlongMetric, Metad
         this.topic = Preconditions.checkNotNull(topic, "kafka topic is empty");
         this.bootstrapServers = Preconditions.checkNotNull(bootstrapServers, "kafka bootstrapServers is empty");
         this.format = Preconditions.checkNotNull(format, "kafka format is empty");
-        this.kafkaScanStartupMode = Preconditions.checkNotNull(kafkaScanStartupMode, "kafka scanStartupMode is empty");
+        this.kafkaScanStartupMode = kafkaScanStartupMode;
         this.primaryKey = primaryKey;
         this.groupId = groupId;
         if (kafkaScanStartupMode == KafkaScanStartupMode.SPECIFIC_OFFSETS) {
@@ -154,19 +155,19 @@ public class KafkaExtractNode extends ExtractNode implements InlongMetric, Metad
         Map<String, String> options = super.tableOptions();
         options.put(KafkaConstant.TOPIC, topic);
         options.put(KafkaConstant.PROPERTIES_BOOTSTRAP_SERVERS, bootstrapServers);
-        options.put(KafkaConstant.SCAN_STARTUP_MODE, kafkaScanStartupMode.getValue());
         if (isUpsertKafkaConnector(format, !StringUtils.isEmpty(this.primaryKey))) {
             options.put(KafkaConstant.CONNECTOR, KafkaConstant.UPSERT_KAFKA);
             options.putAll(format.generateOptions(true));
         } else {
             options.put(KafkaConstant.CONNECTOR, KafkaConstant.KAFKA);
             options.putAll(format.generateOptions(false));
-        }
-        if (StringUtils.isNotEmpty(scanSpecificOffsets)) {
-            options.put(KafkaConstant.SCAN_STARTUP_SPECIFIC_OFFSETS, scanSpecificOffsets);
-        }
-        if (StringUtils.isNotBlank(scanTimestampMillis)) {
-            options.put(KafkaConstant.SCAN_STARTUP_TIMESTAMP_MILLIS, scanTimestampMillis);
+            options.put(KafkaConstant.SCAN_STARTUP_MODE, kafkaScanStartupMode.getValue());
+            if (StringUtils.isNotEmpty(scanSpecificOffsets)) {
+                options.put(KafkaConstant.SCAN_STARTUP_SPECIFIC_OFFSETS, scanSpecificOffsets);
+            }
+            if (StringUtils.isNotBlank(scanTimestampMillis)) {
+                options.put(KafkaConstant.SCAN_STARTUP_TIMESTAMP_MILLIS, scanTimestampMillis);
+            }
         }
         if (StringUtils.isNotEmpty(groupId)) {
             options.put(KafkaConstant.PROPERTIES_GROUP_ID, groupId);
@@ -262,6 +263,13 @@ public class KafkaExtractNode extends ExtractNode implements InlongMetric, Metad
             case TIMESTAMP:
                 metadataKey = "timestamp";
                 break;
+            case AUDIT_DATA_TIME:
+                if (format instanceof InLongMsgFormat) {
+                    metadataKey = INLONG_MSG_AUDIT_TIME;
+                } else {
+                    metadataKey = CONSUME_AUDIT_TIME;
+                }
+                break;
             default:
                 throw new UnsupportedOperationException(String.format("Unsupport meta field for %s: %s",
                         this.getClass().getSimpleName(), metaField));
@@ -279,6 +287,7 @@ public class KafkaExtractNode extends ExtractNode implements InlongMetric, Metad
             case PARTITION:
             case OFFSET:
             case TIMESTAMP:
+            case AUDIT_DATA_TIME:
                 return true;
             default:
                 return false;
@@ -291,6 +300,6 @@ public class KafkaExtractNode extends ExtractNode implements InlongMetric, Metad
                 MetaField.SQL_TYPE, MetaField.PK_NAMES, MetaField.TS, MetaField.OP_TS, MetaField.IS_DDL,
                 MetaField.MYSQL_TYPE, MetaField.BATCH_ID, MetaField.UPDATE_BEFORE,
                 MetaField.KEY, MetaField.VALUE, MetaField.PARTITION, MetaField.HEADERS,
-                MetaField.HEADERS_TO_JSON_STR, MetaField.OFFSET, MetaField.TIMESTAMP);
+                MetaField.HEADERS_TO_JSON_STR, MetaField.OFFSET, MetaField.TIMESTAMP, MetaField.AUDIT_DATA_TIME);
     }
 }

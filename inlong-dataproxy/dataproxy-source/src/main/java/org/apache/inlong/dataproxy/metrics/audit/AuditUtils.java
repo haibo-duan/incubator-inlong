@@ -17,7 +17,9 @@
 
 package org.apache.inlong.dataproxy.metrics.audit;
 
+import org.apache.inlong.audit.AuditIdEnum;
 import org.apache.inlong.audit.AuditOperator;
+import org.apache.inlong.audit.entity.AuditComponent;
 import org.apache.inlong.audit.util.AuditConfig;
 import org.apache.inlong.common.enums.MessageWrapType;
 import org.apache.inlong.common.msg.AttributeConstants;
@@ -26,18 +28,21 @@ import org.apache.inlong.dataproxy.consts.ConfigConstants;
 import org.apache.inlong.dataproxy.metrics.DataProxyMetricItem;
 import org.apache.inlong.dataproxy.utils.Constants;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.flume.Event;
 
 import java.util.Map;
+
+import static org.apache.inlong.audit.consts.ConfigConstants.DEFAULT_AUDIT_TAG;
 
 /**
  * Audit utils
  */
 public class AuditUtils {
 
-    public static final int AUDIT_ID_DATAPROXY_READ_SUCCESS = 5;
-    public static final int AUDIT_ID_DATAPROXY_SEND_SUCCESS = 6;
+    private static int auditIdReadSuccess = 5;
+    private static int auditIdSendSuccess = 6;
 
     /**
      * Init audit
@@ -45,23 +50,52 @@ public class AuditUtils {
     public static void initAudit() {
         if (CommonConfigHolder.getInstance().isEnableAudit()) {
             // AuditProxy
-            AuditOperator.getInstance().setAuditProxy(
-                    CommonConfigHolder.getInstance().getAuditProxys());
+            if (CommonConfigHolder.getInstance().isEnableAuditProxysDiscoveryFromManager()) {
+                AuditOperator.getInstance().setAuditProxy(AuditComponent.DATAPROXY,
+                        CommonConfigHolder.getInstance().getManagerHosts().get(0),
+                        CommonConfigHolder.getInstance().getManagerAuthSecretId(),
+                        CommonConfigHolder.getInstance().getManagerAuthSecretKey());
+            } else {
+                AuditOperator.getInstance().setAuditProxy(
+                        CommonConfigHolder.getInstance().getAuditProxys());
+            }
             // AuditConfig
             AuditConfig auditConfig = new AuditConfig(
                     CommonConfigHolder.getInstance().getAuditFilePath(),
                     CommonConfigHolder.getInstance().getAuditMaxCacheRows());
             AuditOperator.getInstance().setAuditConfig(auditConfig);
+            auditIdReadSuccess =
+                    AuditOperator.getInstance().buildSuccessfulAuditId(AuditIdEnum.DATA_PROXY_INPUT);
+            auditIdSendSuccess =
+                    AuditOperator.getInstance().buildSuccessfulAuditId(AuditIdEnum.DATA_PROXY_OUTPUT);
         }
     }
 
     /**
-     * Add audit data
+     * Add input audit data
+     *
+     * @param event    event to be counted
      */
-    public static void add(int auditID, Event event) {
-        if (!CommonConfigHolder.getInstance().isEnableAudit() || event == null) {
+    public static void addInputSuccess(Event event) {
+        if (event == null || !CommonConfigHolder.getInstance().isEnableAudit()) {
             return;
         }
+        addAuditData(event, auditIdReadSuccess);
+    }
+
+    /**
+     * Add output audit data
+     *
+     * @param event    event to be counted
+     */
+    public static void addOutputSuccess(Event event) {
+        if (event == null || !CommonConfigHolder.getInstance().isEnableAudit()) {
+            return;
+        }
+        addAuditData(event, auditIdSendSuccess);
+    }
+
+    private static void addAuditData(Event event, int auditID) {
         Map<String, String> headers = event.getHeaders();
         String pkgVersion = headers.get(ConfigConstants.MSG_ENCODE_VER);
         if (MessageWrapType.INLONG_MSG_V1.getStrId().equalsIgnoreCase(pkgVersion)) {
@@ -72,15 +106,17 @@ public class AuditUtils {
             if (event.getHeaders().containsKey(ConfigConstants.MSG_COUNTER_KEY)) {
                 msgCount = Long.parseLong(event.getHeaders().get(ConfigConstants.MSG_COUNTER_KEY));
             }
-            AuditOperator.getInstance().add(auditID, inlongGroupId,
-                    inlongStreamId, logTime, msgCount, event.getBody().length);
+            long auditVersion = getAuditVersion(headers);
+            AuditOperator.getInstance().add(auditID, DEFAULT_AUDIT_TAG,
+                    inlongGroupId, inlongStreamId, logTime, msgCount, event.getBody().length, auditVersion);
         } else {
             String groupId = headers.get(AttributeConstants.GROUP_ID);
             String streamId = headers.get(AttributeConstants.STREAM_ID);
             long dataTime = NumberUtils.toLong(headers.get(AttributeConstants.DATA_TIME));
             long msgCount = NumberUtils.toLong(headers.get(ConfigConstants.MSG_COUNTER_KEY));
-            AuditOperator.getInstance().add(auditID, groupId,
-                    streamId, dataTime, msgCount, event.getBody().length);
+            long auditVersion = getAuditVersion(headers);
+            AuditOperator.getInstance().add(auditID, DEFAULT_AUDIT_TAG,
+                    groupId, streamId, dataTime, msgCount, event.getBody().length, auditVersion);
         }
     }
 
@@ -120,9 +156,28 @@ public class AuditUtils {
     }
 
     /**
+     * Get Audit version
+     *
+     * @param headers  the message headers
+     *
+     * @return audit version
+     */
+    public static long getAuditVersion(Map<String, String> headers) {
+        String strAuditVersion = headers.get(AttributeConstants.AUDIT_VERSION);
+        if (StringUtils.isNotBlank(strAuditVersion)) {
+            try {
+                return Long.parseLong(strAuditVersion);
+            } catch (Throwable ex) {
+                //
+            }
+        }
+        return -1L;
+    }
+
+    /**
      * Send audit data
      */
     public static void send() {
-        AuditOperator.getInstance().send();
+        AuditOperator.getInstance().flush();
     }
 }

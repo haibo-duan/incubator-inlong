@@ -27,6 +27,8 @@ const resources = {
     translation: {
       'configs.menus.Process': 'Approval',
       'configs.menus.Groups': 'Ingestion',
+      'configs.menus.GroupsManagement': 'Ingestion Management',
+      'configs.menus.Groups.Template': 'Template Management',
       'configs.menus.Subscribe': 'Subscription',
       'configs.menus.Clusters': 'Clusters',
       'configs.menus.ClusterTags': 'ClusterTags',
@@ -36,12 +38,18 @@ const resources = {
       'configs.menus.Nodes': 'DataNodes',
       'configs.menus.DataSynchronize': 'Synchronization',
       'configs.menus.TenantManagement': 'Tenant Management',
+      'configs.menus.SystemOperation': 'Operation',
+      'configs.menus.ModuleAudit': 'Module audit',
+      'configs.menus.agentModule': 'Version Management',
+      'configs.menus.agentPackage': 'Package',
     },
   },
   cn: {
     translation: {
       'configs.menus.Process': '审批管理',
       'configs.menus.Groups': '数据接入',
+      'configs.menus.GroupsManagement': '接入管理',
+      'configs.menus.Groups.Template': '模板管理',
       'configs.menus.Subscribe': '数据订阅',
       'configs.menus.Clusters': '集群管理',
       'configs.menus.ClusterTags': '标签管理',
@@ -51,6 +59,10 @@ const resources = {
       'configs.menus.Nodes': '数据节点',
       'configs.menus.DataSynchronize': '数据同步',
       'configs.menus.TenantManagement': '租户管理',
+      'configs.menus.SystemOperation': '系统运维',
+      'configs.menus.ModuleAudit': '模块审计',
+      'configs.menus.agentModule': '版本管理',
+      'configs.menus.agentPackage': '安装包',
     },
   },
 };

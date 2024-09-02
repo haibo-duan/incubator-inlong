@@ -195,6 +195,12 @@ public final class Constants {
                     .defaultValue(false)
                     .withDescription("Regard upsert delete as insert kind.");
 
+    public static final ConfigOption<Boolean> IGNORE_JSON_PARSE_ERROR =
+            ConfigOptions.key("sink.ignore.json.parse.error")
+                    .booleanType()
+                    .defaultValue(false)
+                    .withDescription("Ignore json parse error.");
+
     public static final ConfigOption<String> SINK_MULTIPLE_FORMAT =
             ConfigOptions.key("sink.multiple.format")
                     .stringType()
@@ -419,6 +425,28 @@ public final class Constants {
     public static final ConfigOption<Boolean> SINK_AUTO_CREATE_TABLE_WHEN_SNAPSHOT =
             ConfigOptions.key("sink.multiple.auto-create-table-when-snapshot")
                     .booleanType()
-                    .defaultValue(false)
+                    .defaultValue(true)
                     .withDescription("Whether supporting auto create table when snapshot, default value is 'false'");
+
+    public static final ConfigOption<String> INNER_FORMAT =
+            ConfigOptions.key("inlong-msg.inner.format")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription(
+                            "Inner format");
+
+    public static final ConfigOption<String> PULSAR_CLIENT_AUTH_PLUGIN_CLASSNAME =
+            ConfigOptions.key("pulsar.client.authPluginClassName")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription(
+                            "pulsar client auth plugin class name");
+
+    public static final ConfigOption<String> PULSAR_AUTH_PARAMS =
+            ConfigOptions.key("pulsar.client.authParams")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription(
+                            "pulsar client auth params");
+
 }

@@ -23,6 +23,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 ARG AUDIT_TARBALL
 ADD ${AUDIT_TARBALL} /opt/inlong-audit
+EXPOSE 10080
 EXPOSE 10081
 # pulsar or tubemq or kafka
 ENV MQ_TYPE=pulsar
@@ -35,23 +36,14 @@ ENV TUBE_AUDIT_TOPIC="inlong-audit"
 ENV AUDIT_DBNAME="apache_inlong_audit"
 # proxy/store/all, start audit module individually, or all
 ENV START_MODE="all"
-# mysql / clickhouse / elasticsearch
-ENV STORE_MODE=mysql
-# mysql
-ENV JDBC_URL=127.0.0.1:3306
-ENV USERNAME=root
-ENV PASSWORD=inlong
-# clickhouse
-ENV STORE_CK_URL=127.0.0.1:8123
-ENV STORE_CK_USERNAME=default
-ENV STORE_CK_PASSWD=default
-ENV STORE_CK_DBNAME="apache_inlong_audit"
-# elasticsearch
-ENV STORE_ES_HOST=127.0.0.1
-ENV STORE_ES_PORT=9200
-ENV STORE_ES_AUTHENABLE=false
-ENV STORE_ES_USERNAME=elastic
-ENV STORE_ES_PASSWD=inlong
+# MySQL / StarRocks
+ENV AUDIT_JDBC_URL=127.0.0.1:3306
+ENV AUDIT_JDBC_USERNAME=root
+ENV AUDIT_JDBC_PASSWORD=inlong
+
+# Audit Proxy host
+ENV AUDIT_PROXY_ADDRESS=127.0.0.1:10081
+
 # jvm
 ENV AUDIT_JVM_HEAP_OPTS="-XX:+UseContainerSupport -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=80.0 -XX:-UseAdaptiveSizePolicy"
 WORKDIR /opt/inlong-audit

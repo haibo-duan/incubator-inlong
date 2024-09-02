@@ -17,9 +17,12 @@
 
 package org.apache.inlong.manager.service.resource.queue.kafka;
 
+import org.apache.inlong.common.enums.DataTypeEnum;
+import org.apache.inlong.common.enums.MessageWrapType;
 import org.apache.inlong.common.msg.InLongMsg;
 import org.apache.inlong.manager.pojo.consume.BriefMQMessage;
 import org.apache.inlong.manager.pojo.stream.InlongStreamInfo;
+import org.apache.inlong.manager.pojo.stream.QueryMessageRequest;
 import org.apache.inlong.manager.service.ServiceBaseTest;
 
 import com.google.common.collect.Lists;
@@ -93,6 +96,8 @@ public class KafkaOperatorTest extends ServiceBaseTest {
     @BeforeEach
     public void setUp() {
         streamInfo.setDataEncoding("UTF-8");
+        streamInfo.setDataType(DataTypeEnum.CSV.getType());
+        streamInfo.setWrapType(MessageWrapType.INLONG_MSG_V0.getName());
 
         List<TopicPartition> topicPartitions = IntStream.range(0, PARTITION_NUM)
                 .mapToObj(i -> new TopicPartition(TOPIC_NAME, i)).collect(Collectors.toList());
@@ -112,15 +117,18 @@ public class KafkaOperatorTest extends ServiceBaseTest {
 
     @Test
     void testGetKafkaLatestMessage() {
-        List<BriefMQMessage> messages = kafkaOperator.getLatestMessage(consumer, TOPIC_NAME, 10, streamInfo);
+        QueryMessageRequest request = new QueryMessageRequest();
+        request.setMessageCount(10);
+        List<BriefMQMessage> messages = kafkaOperator.getLatestMessage(consumer, TOPIC_NAME, streamInfo, request);
         Assertions.assertEquals(0, messages.size());
     }
 
     @Test
     void testGetKafkaLatestMessage_1() {
         addRecord(Collections.singletonList("inlong"));
-
-        List<BriefMQMessage> messages = kafkaOperator.getLatestMessage(consumer, TOPIC_NAME, 10, streamInfo);
+        QueryMessageRequest request = new QueryMessageRequest();
+        request.setMessageCount(10);
+        List<BriefMQMessage> messages = kafkaOperator.getLatestMessage(consumer, TOPIC_NAME, streamInfo, request);
         Assertions.assertEquals(1, messages.size());
         Assertions.assertEquals("inlong", messages.get(0).getBody());
     }
@@ -129,8 +137,9 @@ public class KafkaOperatorTest extends ServiceBaseTest {
     void testGetKafkaLatestMessage_2() {
         List<String> records = IntStream.range(0, 9).mapToObj(index -> "name_" + index).collect(Collectors.toList());
         addRecord(records);
-
-        List<BriefMQMessage> messages = kafkaOperator.getLatestMessage(consumer, TOPIC_NAME, 10, streamInfo);
+        QueryMessageRequest request = new QueryMessageRequest();
+        request.setMessageCount(10);
+        List<BriefMQMessage> messages = kafkaOperator.getLatestMessage(consumer, TOPIC_NAME, streamInfo, request);
         Assertions.assertEquals(9, messages.size());
     }
 
@@ -138,8 +147,9 @@ public class KafkaOperatorTest extends ServiceBaseTest {
     void testGetKafkaLatestMessage_4() {
         List<String> records = IntStream.range(0, 21).mapToObj(index -> "name_" + index).collect(Collectors.toList());
         addRecord(records);
-
-        List<BriefMQMessage> messages = kafkaOperator.getLatestMessage(consumer, TOPIC_NAME, 10, streamInfo);
+        QueryMessageRequest request = new QueryMessageRequest();
+        request.setMessageCount(10);
+        List<BriefMQMessage> messages = kafkaOperator.getLatestMessage(consumer, TOPIC_NAME, streamInfo, request);
         Assertions.assertEquals(10, messages.size());
     }
 

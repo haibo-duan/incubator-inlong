@@ -31,6 +31,7 @@ import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
 import org.apache.inlong.manager.common.util.CommonBeanUtils;
 import org.apache.inlong.manager.dao.entity.InlongClusterEntity;
+import org.apache.inlong.manager.dao.entity.InlongClusterTagEntity;
 import org.apache.inlong.manager.dao.entity.InlongGroupEntity;
 import org.apache.inlong.manager.dao.entity.InlongGroupExtEntity;
 import org.apache.inlong.manager.dao.entity.InlongStreamExtEntity;
@@ -45,7 +46,7 @@ import org.apache.inlong.manager.pojo.dataproxy.InlongGroupId;
 import org.apache.inlong.manager.pojo.dataproxy.InlongStreamId;
 import org.apache.inlong.manager.pojo.dataproxy.ProxyCluster;
 import org.apache.inlong.manager.pojo.sink.SinkPageRequest;
-import org.apache.inlong.manager.service.core.SortConfigLoader;
+import org.apache.inlong.manager.service.core.ConfigLoader;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
@@ -79,10 +80,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * DataProxyConfigRepository
- * This repository was deprecated since version 1.8.0
  */
 @Lazy
-@Deprecated
 @Repository(value = "dataProxyConfigRepository")
 public class DataProxyConfigRepository implements IRepository {
 
@@ -91,12 +90,15 @@ public class DataProxyConfigRepository implements IRepository {
     public static final String KEY_NAMESPACE = "namespace";
     public static final String KEY_NEW_TENANT_KEY = "pulsarTenant";
     public static final String KEY_OLD_TENANT_KEY = "tenant";
+    public static final String KEY_DATA_TYPE = "dataType";
+    public static final String KEY_WRAP_TYPE = "wrapType";
     public static final String KEY_BACKUP_CLUSTER_TAG = "backup_cluster_tag";
     public static final String KEY_BACKUP_TOPIC = "backup_topic";
     public static final String KEY_SORT_TASK_NAME = "defaultSortTaskName";
     public static final String KEY_DATA_NODE_NAME = "defaultDataNodeName";
     public static final String KEY_SORT_CONSUMER_GROUP = "defaultSortConsumerGroup";
     public static final String KEY_SINK_NAME = "defaultSinkName";
+    public static final String KEY_INLONG_COMPRESS_TYPE = "inlongCompressType";
 
     public static final Splitter.MapSplitter MAP_SPLITTER = Splitter.on(SEPARATOR).trimResults()
             .withKeyValueSeparator(KEY_VALUE_SEPARATOR);
@@ -120,7 +122,7 @@ public class DataProxyConfigRepository implements IRepository {
     @Autowired
     private StreamSinkEntityMapper streamSinkMapper;
     @Autowired
-    private SortConfigLoader sortConfigLoader;
+    private ConfigLoader configLoader;
 
     @PostConstruct
     public void initialize() {
@@ -362,7 +364,7 @@ public class DataProxyConfigRepository implements IRepository {
         Map<String, Map<String, String>> groupParams = new HashMap<>();
         groupIdMap.forEach((k, v) -> groupParams.put(k, fromJsonToMap(v.getExtParams())));
         // reload inlong group ext
-        List<InlongGroupExtEntity> groupExtCursor = sortConfigLoader
+        List<InlongGroupExtEntity> groupExtCursor = configLoader
                 .loadGroupBackupInfo(ClusterSwitch.BACKUP_CLUSTER_TAG);
         groupExtCursor.forEach(v -> groupParams.computeIfAbsent(v.getInlongGroupId(), k -> new HashMap<>())
                 .put(ClusterSwitch.BACKUP_CLUSTER_TAG, v.getKeyValue()));
@@ -370,11 +372,25 @@ public class DataProxyConfigRepository implements IRepository {
         Map<String, InlongStreamId> streamIdMap = new HashMap<>();
         clusterSetMapper.selectInlongStreamId()
                 .forEach(v -> streamIdMap.put(getInlongId(v.getInlongGroupId(), v.getInlongStreamId()), v));
+
+        Map<String, InlongClusterTagEntity> clusterTagMap = new HashMap<>();
+        clusterSetMapper.selectInlongClusterTag().forEach(v -> clusterTagMap.put(v.getClusterTag(), v));
+        // reload inlong stream ext params
+        Map<String, Map<String, String>> clusterTagParams = new HashMap<>();
+        clusterTagMap.forEach((k, v) -> {
+            Map<String, String> params = fromJsonToMap(v.getExtParams());
+            clusterTagParams.put(k, params);
+        });
         // reload inlong stream ext params
         Map<String, Map<String, String>> streamParams = new HashMap<>();
-        streamIdMap.forEach((k, v) -> streamParams.put(k, fromJsonToMap(v.getExtParams())));
+        streamIdMap.forEach((k, v) -> {
+            Map<String, String> params = fromJsonToMap(v.getExtParams());
+            params.computeIfAbsent(KEY_DATA_TYPE, type -> v.getDataType());
+            params.computeIfAbsent(KEY_WRAP_TYPE, type -> v.getWrapType());
+            streamParams.put(k, params);
+        });
         // reload inlong stream ext
-        List<InlongStreamExtEntity> streamExtCursor = sortConfigLoader
+        List<InlongStreamExtEntity> streamExtCursor = configLoader
                 .loadStreamBackupInfo(ClusterSwitch.BACKUP_MQ_RESOURCE);
         streamExtCursor.forEach(v -> streamParams
                 .computeIfAbsent(getInlongId(v.getInlongGroupId(), v.getInlongStreamId()), k -> new HashMap<>())
@@ -382,7 +398,7 @@ public class DataProxyConfigRepository implements IRepository {
 
         // build Map<clusterTag, List<InlongIdObject>>
         Map<String, List<InLongIdObject>> inlongIdMap = this.parseInlongId(groupIdMap, groupParams, streamIdMap,
-                streamParams);
+                streamParams, clusterTagParams);
         // mark inlong id to proxy cluster
         for (Entry<String, DataProxyCluster> entry : proxyClusterMap.entrySet()) {
             String clusterTag = entry.getValue().getProxyCluster().getSetName();
@@ -398,7 +414,7 @@ public class DataProxyConfigRepository implements IRepository {
      */
     private Map<String, List<InLongIdObject>> parseInlongId(Map<String, InlongGroupId> groupIdMap,
             Map<String, Map<String, String>> groupParams, Map<String, InlongStreamId> streamIdMap,
-            Map<String, Map<String, String>> streamParams) {
+            Map<String, Map<String, String>> streamParams, Map<String, Map<String, String>> clusterTagParams) {
         Map<String, List<InLongIdObject>> inlongIdMap = new HashMap<>();
         for (Entry<String, InlongStreamId> entry : streamIdMap.entrySet()) {
             InlongStreamId streamIdObj = entry.getValue();
@@ -420,6 +436,11 @@ public class DataProxyConfigRepository implements IRepository {
                 obj.setTopic(streamIdObj.getTopic());
                 obj.getParams().put(KEY_NAMESPACE, groupIdObj.getTopic());
             }
+            Map<String, String> tagParamMap = clusterTagParams.get(groupIdObj.getClusterTag());
+            if (tagParamMap != null && StringUtils.isNotBlank(tagParamMap.get(KEY_INLONG_COMPRESS_TYPE))) {
+                obj.getParams().put(KEY_INLONG_COMPRESS_TYPE, tagParamMap.get(KEY_INLONG_COMPRESS_TYPE));
+            }
+
             inlongIdMap.computeIfAbsent(groupIdObj.getClusterTag(), k -> new ArrayList<>()).add(obj);
             // backup
             InLongIdObject backupObj = new InLongIdObject();
@@ -437,6 +458,12 @@ public class DataProxyConfigRepository implements IRepository {
                     backupObj.getParams().put(KEY_NAMESPACE, groupMqResource);
                 } else {
                     backupObj.setTopic(groupMqResource);
+                }
+                Map<String, String> backUpTagParamMap = clusterTagParams.get(groupIdObj.getClusterTag());
+                if (backUpTagParamMap != null
+                        && StringUtils.isNotBlank(backUpTagParamMap.get(KEY_INLONG_COMPRESS_TYPE))) {
+                    backupObj.getParams().put(KEY_INLONG_COMPRESS_TYPE,
+                            backUpTagParamMap.get(KEY_INLONG_COMPRESS_TYPE));
                 }
                 inlongIdMap.computeIfAbsent(clusterTag, k -> new ArrayList<>()).add(backupObj);
             }

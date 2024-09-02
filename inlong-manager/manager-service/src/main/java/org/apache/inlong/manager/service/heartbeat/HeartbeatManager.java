@@ -19,6 +19,7 @@ package org.apache.inlong.manager.service.heartbeat;
 
 import org.apache.inlong.common.enums.NodeSrvStatus;
 import org.apache.inlong.common.heartbeat.AbstractHeartbeatManager;
+import org.apache.inlong.common.heartbeat.AddressInfo;
 import org.apache.inlong.common.heartbeat.ComponentHeartbeat;
 import org.apache.inlong.common.heartbeat.HeartbeatMsg;
 import org.apache.inlong.manager.common.consts.InlongConstants;
@@ -38,6 +39,7 @@ import org.apache.inlong.manager.dao.mapper.StreamSourceEntityMapper;
 import org.apache.inlong.manager.pojo.cluster.ClusterInfo;
 import org.apache.inlong.manager.pojo.cluster.ClusterNodeRequest;
 import org.apache.inlong.manager.pojo.cluster.agent.AgentClusterNodeDTO;
+import org.apache.inlong.manager.pojo.cluster.dataproxy.DataProxyClusterNodeDTO;
 import org.apache.inlong.manager.service.cluster.InlongClusterOperator;
 import org.apache.inlong.manager.service.cluster.InlongClusterOperatorFactory;
 
@@ -153,26 +155,57 @@ public class HeartbeatManager implements AbstractHeartbeatManager {
 
         // if the heartbeat was not in the cache, insert or update the node by the heartbeat info
         HeartbeatMsg lastHeartbeat = heartbeatCache.getIfPresent(componentHeartbeat);
+        if (heartbeat.getAddressInfos() != null) {
+            heartbeat.setPort(Joiner.on(InlongConstants.COMMA)
+                    .join(heartbeat.getAddressInfos().stream().map(AddressInfo::getPort).collect(Collectors.toList())));
+            heartbeat.setIp(Joiner.on(InlongConstants.COMMA)
+                    .join(heartbeat.getAddressInfos().stream().map(AddressInfo::getIp).collect(Collectors.toList())));
+            heartbeat.setReportSourceType(Joiner.on(InlongConstants.COMMA).join(heartbeat.getAddressInfos().stream()
+                    .map(AddressInfo::getReportSourceType).collect(Collectors.toList())));
+            heartbeat.setProtocolType(Joiner.on(InlongConstants.COMMA).join(heartbeat.getAddressInfos().stream()
+                    .map(AddressInfo::getProtocolType).collect(Collectors.toList())));
+        }
 
         // protocolType may be null, and the protocolTypes' length may be less than ports' length
-        String[] ports = heartbeat.getPort().split(InlongConstants.COMMA);
         String[] ips = heartbeat.getIp().split(InlongConstants.COMMA);
+        String port = heartbeat.getPort();
+        String[] ports = null;
+        if (StringUtils.isNotBlank(port)) {
+            ports = port.split(InlongConstants.COMMA);
+            if (ports.length < ips.length) {
+                ports = null;
+            }
+        }
+        String[] reportSourceTypes = null;
+        if (StringUtils.isNotBlank(heartbeat.getReportSourceType()) && ips.length > 1) {
+            reportSourceTypes = heartbeat.getReportSourceType().split(InlongConstants.COMMA);
+            if (reportSourceTypes.length < ips.length) {
+                reportSourceTypes = null;
+            }
+        }
         String protocolType = heartbeat.getProtocolType();
         String[] protocolTypes = null;
-        if (StringUtils.isNotBlank(protocolType) && ports.length > 1) {
+        if (StringUtils.isNotBlank(protocolType) && ips.length > 1) {
             protocolTypes = protocolType.split(InlongConstants.COMMA);
-            if (protocolTypes.length < ports.length) {
+            if (protocolTypes.length < ips.length) {
                 protocolTypes = null;
             }
         }
 
         int handlerNum = 0;
-        for (int i = 0; i < ports.length; i++) {
+        for (int i = 0; i < ips.length; i++) {
             // deep clone the heartbeat
             HeartbeatMsg heartbeatMsg = JsonUtils.parseObject(JsonUtils.toJsonByte(heartbeat), HeartbeatMsg.class);
             assert heartbeatMsg != null;
-            heartbeatMsg.setPort(ports[i].trim());
+            if (StringUtils.isNotBlank(port)) {
+                heartbeatMsg.setPort(ports[i].trim());
+            }
             heartbeatMsg.setIp(ips[i].trim());
+            if (reportSourceTypes != null) {
+                heartbeatMsg.setReportSourceType(reportSourceTypes[i].trim());
+            } else {
+                heartbeatMsg.setReportSourceType(heartbeat.getReportSourceType());
+            }
             if (protocolTypes != null) {
                 heartbeatMsg.setProtocolType(protocolTypes[i]);
             } else {
@@ -206,7 +239,7 @@ public class HeartbeatManager implements AbstractHeartbeatManager {
         }
 
         // if the heartbeat already exists, or does not exist but insert/update success, then put it into the cache
-        if (lastHeartbeat == null || handlerNum == ports.length) {
+        if (lastHeartbeat == null || handlerNum == ips.length) {
             heartbeatCache.put(componentHeartbeat, heartbeat);
         }
     }
@@ -223,13 +256,20 @@ public class HeartbeatManager implements AbstractHeartbeatManager {
         }
 
         // protocolType may be null, and the protocolTypes' length may be less than ports' length
-        String[] ports = heartbeat.getPort().split(InlongConstants.COMMA);
         String[] ips = heartbeat.getIp().split(InlongConstants.COMMA);
+        String port = heartbeat.getPort();
+        String[] ports = null;
+        if (StringUtils.isNotBlank(port)) {
+            ports = port.split(InlongConstants.COMMA);
+            if (ports.length < ips.length) {
+                ports = null;
+            }
+        }
         String protocolType = heartbeat.getProtocolType();
         String[] protocolTypes = null;
-        if (StringUtils.isNotBlank(protocolType) && ports.length > 1) {
+        if (StringUtils.isNotBlank(protocolType) && ips.length > 1) {
             protocolTypes = protocolType.split(InlongConstants.COMMA);
-            if (protocolTypes.length < ports.length) {
+            if (protocolTypes.length < ips.length) {
                 protocolTypes = null;
             }
         }
@@ -237,17 +277,19 @@ public class HeartbeatManager implements AbstractHeartbeatManager {
         // heartbeatInterval() is the reporting interval of cluster nodes, multiplied by two to prevent network
         // fluctuations
         ComponentHeartbeatEntity componentHeartbeatEntity = componentHeartbeatMapper.selectTimeOutHeartBeat(
-                componentHeartbeat.getComponentType(), componentHeartbeat.getIp(), heartbeatInterval() * 2L);
+                componentHeartbeat.getComponentType(), componentHeartbeat.getIp(), heartbeatInterval() * 6L);
         if (componentHeartbeatEntity != null) {
             heartbeatCache.put(componentHeartbeat, heartbeat);
             return;
         }
 
-        for (int i = 0; i < ports.length; i++) {
+        for (int i = 0; i < ips.length; i++) {
             // deep clone the heartbeat
             HeartbeatMsg heartbeatMsg = JsonUtils.parseObject(JsonUtils.toJsonByte(heartbeat), HeartbeatMsg.class);
             assert heartbeatMsg != null;
-            heartbeatMsg.setPort(ports[i].trim());
+            if (StringUtils.isNotBlank(port) && ports != null) {
+                heartbeatMsg.setPort(ports[i].trim());
+            }
             heartbeatMsg.setIp(ips[i].trim());
             if (protocolTypes != null) {
                 heartbeatMsg.setProtocolType(protocolTypes[i]);
@@ -270,7 +312,9 @@ public class HeartbeatManager implements AbstractHeartbeatManager {
         nodeRequest.setParentId(clusterInfo.getId());
         nodeRequest.setType(heartbeat.getComponentType());
         nodeRequest.setIp(heartbeat.getIp());
-        nodeRequest.setPort(Integer.valueOf(heartbeat.getPort()));
+        if (StringUtils.isNotBlank(heartbeat.getPort())) {
+            nodeRequest.setPort(Integer.valueOf(heartbeat.getPort()));
+        }
         nodeRequest.setProtocolType(heartbeat.getProtocolType());
         return clusterNodeMapper.selectByUniqueKey(nodeRequest);
     }
@@ -280,7 +324,9 @@ public class HeartbeatManager implements AbstractHeartbeatManager {
         clusterNode.setParentId(clusterInfo.getId());
         clusterNode.setType(heartbeat.getComponentType());
         clusterNode.setIp(heartbeat.getIp());
-        clusterNode.setPort(Integer.valueOf(heartbeat.getPort()));
+        if (StringUtils.isNotBlank(heartbeat.getPort())) {
+            clusterNode.setPort(Integer.valueOf(heartbeat.getPort()));
+        }
         clusterNode.setProtocolType(heartbeat.getProtocolType());
         clusterNode.setNodeLoad(heartbeat.getLoad());
         clusterNode.setStatus(ClusterStatus.NORMAL.getStatus());
@@ -301,12 +347,26 @@ public class HeartbeatManager implements AbstractHeartbeatManager {
     private void insertOrUpdateNodeGroup(InlongClusterNodeEntity clusterNode, HeartbeatMsg heartbeat) {
         Set<String> groupSet = StringUtils.isBlank(heartbeat.getNodeGroup()) ? new HashSet<>()
                 : Arrays.stream(heartbeat.getNodeGroup().split(InlongConstants.COMMA)).collect(Collectors.toSet());
-        AgentClusterNodeDTO agentClusterNodeDTO = new AgentClusterNodeDTO();
-        if (StringUtils.isNotBlank(clusterNode.getExtParams())) {
-            agentClusterNodeDTO = AgentClusterNodeDTO.getFromJson(clusterNode.getExtParams());
-            agentClusterNodeDTO.setAgentGroup(Joiner.on(InlongConstants.COMMA).join(groupSet));
+        String extParams = null;
+        switch (clusterNode.getType()) {
+            case ClusterType.AGENT:
+                AgentClusterNodeDTO agentClusterNodeDTO = new AgentClusterNodeDTO();
+                if (StringUtils.isNotBlank(clusterNode.getExtParams())) {
+                    agentClusterNodeDTO = AgentClusterNodeDTO.getFromJson(clusterNode.getExtParams());
+                    agentClusterNodeDTO.setAgentGroup(Joiner.on(InlongConstants.COMMA).join(groupSet));
+                }
+                extParams = GSON.toJson(agentClusterNodeDTO);
+                break;
+            case ClusterType.DATAPROXY:
+                DataProxyClusterNodeDTO dataProxyClusterNodeDTO = new DataProxyClusterNodeDTO();
+                if (StringUtils.isNotBlank(clusterNode.getExtParams())) {
+                    dataProxyClusterNodeDTO = DataProxyClusterNodeDTO.getFromJson(clusterNode.getExtParams());
+                    dataProxyClusterNodeDTO.setReportSourceType(heartbeat.getReportSourceType());
+                }
+                extParams = GSON.toJson(dataProxyClusterNodeDTO);
+                break;
         }
-        clusterNode.setExtParams(GSON.toJson(agentClusterNodeDTO));
+        clusterNode.setExtParams(extParams);
     }
 
     private int deleteClusterNode(InlongClusterNodeEntity clusterNode) {

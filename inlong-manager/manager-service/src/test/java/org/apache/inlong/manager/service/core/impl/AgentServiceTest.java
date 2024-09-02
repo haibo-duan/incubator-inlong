@@ -105,6 +105,7 @@ class AgentServiceTest extends ServiceBaseTest {
         sourceInfo.setInlongStreamId(GLOBAL_STREAM_ID);
         sourceInfo.setSourceType(SourceType.MYSQL_BINLOG);
         sourceInfo.setSourceName("binlog_source_in_agent_service_test");
+        sourceInfo.setHostname("127.0.0.1");
         return sourceService.save(sourceInfo, GLOBAL_OPERATOR);
     }
 
@@ -140,10 +141,11 @@ class AgentServiceTest extends ServiceBaseTest {
     public void suspendSource(String groupId, String streamId) {
         List<StreamSource> sources = sourceService.listSource(groupId, streamId);
         sources.stream()
-                .filter(source -> source.getTemplateId() != null)
+                .filter(source -> source.getTaskMapId() != null)
                 .forEach(source -> sourceService.stop(source.getId(), GLOBAL_OPERATOR));
-        groupMapper.updateStatus(groupId, GroupStatus.SUSPENDED.getCode(), GLOBAL_OPERATOR);
-        streamMapper.updateStatusByIdentifier(groupId, streamId, StreamStatus.SUSPENDED.getCode(), GLOBAL_OPERATOR);
+        groupMapper.updateStatus(groupId, GroupStatus.CONFIG_OFFLINE_SUCCESSFUL.getCode(), GLOBAL_OPERATOR);
+        streamMapper.updateStatusByIdentifier(groupId, streamId, StreamStatus.CONFIG_OFFLINE_SUCCESSFUL.getCode(),
+                GLOBAL_OPERATOR);
     }
 
     /**
@@ -152,10 +154,11 @@ class AgentServiceTest extends ServiceBaseTest {
     public void restartSource(String groupId, String streamId) {
         List<StreamSource> sources = sourceService.listSource(groupId, streamId);
         sources.stream()
-                .filter(source -> source.getTemplateId() != null)
+                .filter(source -> source.getTaskMapId() != null)
                 .forEach(source -> sourceService.restart(source.getId(), GLOBAL_OPERATOR));
-        groupMapper.updateStatus(groupId, GroupStatus.RESTARTED.getCode(), GLOBAL_OPERATOR);
-        streamMapper.updateStatusByIdentifier(groupId, streamId, StreamStatus.RESTARTED.getCode(), GLOBAL_OPERATOR);
+        groupMapper.updateStatus(groupId, GroupStatus.CONFIG_SUCCESSFUL.getCode(), GLOBAL_OPERATOR);
+        streamMapper.updateStatusByIdentifier(groupId, streamId, StreamStatus.CONFIG_SUCCESSFUL.getCode(),
+                GLOBAL_OPERATOR);
     }
 
     public void deleteSource(String groupId, String streamId) {
@@ -229,7 +232,7 @@ class AgentServiceTest extends ServiceBaseTest {
         agent.pullTask(); // report last success status
 
         final int sourceId = sourceService.listSource(groupStream.getLeft(), groupStream.getRight()).stream()
-                .filter(source -> source.getTemplateId() != null)
+                .filter(source -> source.getTaskMapId() != null)
                 .findAny()
                 .get()
                 .getId();
@@ -255,7 +258,7 @@ class AgentServiceTest extends ServiceBaseTest {
 
         // update group to config success
         final String groupId = sourceService.listSource(groupStream.getLeft(), groupStream.getRight()).stream()
-                .filter(source -> source.getTemplateId() != null)
+                .filter(source -> source.getTaskMapId() != null)
                 .findAny()
                 .get()
                 .getInlongGroupId();

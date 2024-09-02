@@ -98,9 +98,13 @@ public class InLongMsg {
     private boolean compress;
     private boolean isNumGroupId = false;
     private boolean ischeck = true;
-
+    private boolean isSupportLF = false;
     private final Version version;
     private long timeoffset = 0;
+
+    public int getVersion() {
+        return version.intValue();
+    }
 
     public void setTimeoffset(long offset) {
         this.timeoffset = offset;
@@ -242,13 +246,9 @@ public class InLongMsg {
             return false;
         }
 
-        DataBuffer outputBuffer = attr2MsgBuffer.get(attr);
-        if (outputBuffer == null) {
-            outputBuffer = new DataBuffer();
-            attr2MsgBuffer.put(attr, outputBuffer);
-            // attrlen + utflen + meglen + compress
-            this.datalen += attr.length() + 2 + 4 + 1;
-        }
+        DataBuffer outputBuffer = attr2MsgBuffer.computeIfAbsent(attr, k -> new DataBuffer());
+        // attrlen + utflen + meglen + compress
+        this.datalen += attr.length() + 2 + 4 + 1;
 
         int len = data.remaining();
         try {
@@ -304,6 +304,10 @@ public class InLongMsg {
 
     private boolean getBinNumFlag(ByteBuffer data) {
         return (data.getShort(BIN_MSG_EXTFIELD_OFFSET) & 0x4) == 0;
+    }
+
+    private boolean getBinisSupportLF(ByteBuffer data) {
+        return (data.getShort(BIN_MSG_EXTFIELD_OFFSET) & 0x20) == 0x20;
     }
 
     private boolean checkBinData(ByteBuffer data) {
@@ -386,9 +390,10 @@ public class InLongMsg {
             out.writeInt(attr2MsgBuffer.size());
 
             if (compress) {
-                for (String attr : attr2MsgBuffer.keySet()) {
+                for (Map.Entry<String, DataBuffer> entry : attr2MsgBuffer.entrySet()) {
+                    String attr = entry.getKey();
+                    DataBuffer data = entry.getValue();
                     out.writeUTF(attr);
-                    DataBuffer data = attr2MsgBuffer.get(attr);
                     if (version.intValue() == Version.v2.intValue()) {
                         out.writeInt(data.cnt);
                     }
@@ -402,9 +407,10 @@ public class InLongMsg {
                     out.write(tmpData, 0, len);
                 }
             } else {
-                for (String attr : attr2MsgBuffer.keySet()) {
+                for (Map.Entry<String, DataBuffer> entry : attr2MsgBuffer.entrySet()) {
+                    String attr = entry.getKey();
+                    DataBuffer data = entry.getValue();
                     out.writeUTF(attr);
-                    DataBuffer data = attr2MsgBuffer.get(attr);
                     if (version.intValue() == Version.v2.intValue()) {
                         out.writeInt(data.cnt);
                     }
@@ -644,6 +650,7 @@ public class InLongMsg {
             this.createtime = getBinCreatetime(parsedBinInput);
             this.msgcnt = getBinMsgCnt(parsedBinInput);
             this.isNumGroupId = getBinNumFlag(parsedBinInput);
+            this.isSupportLF = getBinisSupportLF(parsedBinInput);
         }
     }
 
@@ -800,7 +807,7 @@ public class InLongMsg {
         }
 
         boolean hasOtherAttr = ((extField & 0x1) == 0x1);
-        commonAttrMap.put(AttributeConstants.MESSAGE_COUNT, "1");
+        commonAttrMap.put(AttributeConstants.MESSAGE_COUNT, String.valueOf(this.msgcnt));
         // with private attributes,
         // need to splice private attributes + public attributes
         if (!hasOtherAttr) {
@@ -1116,5 +1123,9 @@ public class InLongMsg {
     public boolean isNumGroupId() {
         checkMode(false);
         return isNumGroupId;
+    }
+
+    public boolean isSupportLF() {
+        return isSupportLF;
     }
 }

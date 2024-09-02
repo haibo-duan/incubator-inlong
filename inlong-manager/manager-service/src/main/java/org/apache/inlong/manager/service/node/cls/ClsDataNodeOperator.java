@@ -17,6 +17,8 @@
 
 package org.apache.inlong.manager.service.node.cls;
 
+import org.apache.inlong.common.pojo.sort.node.ClsNodeConfig;
+import org.apache.inlong.common.pojo.sort.node.NodeConfig;
 import org.apache.inlong.manager.common.consts.DataNodeType;
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
@@ -33,7 +35,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencentcloudapi.cls.v20201016.ClsClient;
 import com.tencentcloudapi.cls.v20201016.models.DescribeTopicsRequest;
 import com.tencentcloudapi.common.Credential;
-import com.tencentcloudapi.common.exception.TencentCloudSDKException;
 import com.tencentcloudapi.common.profile.ClientProfile;
 import com.tencentcloudapi.common.profile.HttpProfile;
 import org.apache.commons.lang3.StringUtils;
@@ -99,7 +100,7 @@ public class ClsDataNodeOperator extends AbstractDataNodeOperator {
         DescribeTopicsRequest req = new DescribeTopicsRequest();
         try {
             client.DescribeTopics(req);
-        } catch (TencentCloudSDKException e) {
+        } catch (Exception e) {
             String errMsg = String.format("connect tencent cloud error endPoint = %s secretId = %s secretKey = %s",
                     dataNodeRequest.getEndpoint(), dataNodeRequest.getManageSecretId(),
                     dataNodeRequest.getManageSecretKey());
@@ -107,5 +108,15 @@ public class ClsDataNodeOperator extends AbstractDataNodeOperator {
             throw new BusinessException(errMsg);
         }
         return true;
+    }
+
+    @Override
+    public NodeConfig getNodeConfig(DataNodeEntity dataNodeEntity) {
+        DataNodeInfo dataNodeInfo = this.getFromEntity(dataNodeEntity);
+        ClsNodeConfig clsNodeConfig = CommonBeanUtils.copyProperties(dataNodeInfo, ClsNodeConfig::new);
+        ClsDataNodeDTO dto = ClsDataNodeDTO.getFromJson(dataNodeEntity.getExtParams());
+        CommonBeanUtils.copyProperties(dto, clsNodeConfig);
+        clsNodeConfig.setNodeName(dataNodeInfo.getName());
+        return clsNodeConfig;
     }
 }

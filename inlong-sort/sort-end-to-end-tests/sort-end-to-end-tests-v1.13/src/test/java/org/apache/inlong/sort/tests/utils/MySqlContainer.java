@@ -35,7 +35,7 @@ public class MySqlContainer extends JdbcDatabaseContainer {
     public static final String IMAGE = "mysql";
     public static final Integer MYSQL_PORT = 3306;
 
-    private static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "MY_CNF";
+    private static final String MY_CNF_CONFIG_OVERRIDE_PARAM_NAME = "TC_MY_CNF";
     private static final String SETUP_SQL_PARAM_NAME = "SETUP_SQL";
     private static final String MYSQL_ROOT_USER = "root";
 
@@ -59,13 +59,14 @@ public class MySqlContainer extends JdbcDatabaseContainer {
 
     @Override
     protected void configure() {
-        // HERE is the difference, copy to /etc/mysql/, if copy to /etc/mysql/conf.d will be wrong
-        optionallyMapResourceParameterAsVolume(
-                MY_CNF_CONFIG_OVERRIDE_PARAM_NAME, "/etc/mysql/", "mysql-default-conf");
-
         if (parameters.containsKey(SETUP_SQL_PARAM_NAME)) {
             optionallyMapResourceParameterAsVolume(
                     SETUP_SQL_PARAM_NAME, "/docker-entrypoint-initdb.d/", "N/A");
+        }
+        if (parameters.containsKey(SETUP_SQL_PARAM_NAME)) {
+            optionallyMapResourceParameterAsVolume(
+                    MY_CNF_CONFIG_OVERRIDE_PARAM_NAME, "/etc/mysql/conf.d",
+                    "docker/mysql");
         }
 
         addEnv("MYSQL_DATABASE", databaseName);
@@ -79,6 +80,7 @@ public class MySqlContainer extends JdbcDatabaseContainer {
             throw new ContainerLaunchException(
                     "Empty password can be used only with the root user");
         }
+        withCommand("--default-authentication-plugin=mysql_native_password");
         setStartupAttempts(3);
     }
 
@@ -94,13 +96,18 @@ public class MySqlContainer extends JdbcDatabaseContainer {
 
     public String getJdbcUrl(String databaseName) {
         String additionalUrlParams = constructUrlParameters("?", "&");
-        return "jdbc:mysql://"
+        String queryString = "?useSSL=false&allowPublicKeyRetrieval=true";
+        String baseUrl = "jdbc:mysql://"
                 + getHost()
                 + ":"
                 + getDatabasePort()
                 + "/"
                 + databaseName
                 + additionalUrlParams;
+
+        return baseUrl.contains("?")
+                ? baseUrl + "&" + queryString.substring(1)
+                : baseUrl + queryString;
     }
 
     @Override

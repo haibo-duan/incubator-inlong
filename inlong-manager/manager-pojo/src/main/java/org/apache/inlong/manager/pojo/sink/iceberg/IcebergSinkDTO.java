@@ -21,6 +21,7 @@ import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
 import org.apache.inlong.manager.common.util.CommonBeanUtils;
 import org.apache.inlong.manager.common.util.JsonUtils;
+import org.apache.inlong.manager.pojo.sink.BaseStreamSink;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -41,7 +42,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class IcebergSinkDTO {
+public class IcebergSinkDTO extends BaseStreamSink {
 
     @ApiModelProperty("Catalog type, like: HIVE, HADOOP, default is HIVE")
     @Builder.Default
@@ -67,6 +68,24 @@ public class IcebergSinkDTO {
 
     @ApiModelProperty("Partition type, like: H-hour, D-day, W-week, M-month, O-once, R-regulation")
     private String partitionType;
+
+    @ApiModelProperty("The multiple enable of sink")
+    private Boolean sinkMultipleEnable = false;
+
+    @ApiModelProperty("The multiple format of sink")
+    private String sinkMultipleFormat;
+
+    @ApiModelProperty("database pattern")
+    private String databasePattern;
+
+    @ApiModelProperty("table pattern")
+    private String tablePattern;
+
+    @ApiModelProperty("append mode, UPSERT or APPEND")
+    private String appendMode;
+
+    @ApiModelProperty("enable schema change")
+    private Boolean enableSchemaChange = false;
 
     @ApiModelProperty("Primary key")
     private String primaryKey;

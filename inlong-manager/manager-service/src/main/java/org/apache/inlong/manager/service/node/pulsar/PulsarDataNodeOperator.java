@@ -17,6 +17,8 @@
 
 package org.apache.inlong.manager.service.node.pulsar;
 
+import org.apache.inlong.common.pojo.sort.node.NodeConfig;
+import org.apache.inlong.common.pojo.sort.node.PulsarNodeConfig;
 import org.apache.inlong.manager.common.consts.DataNodeType;
 import org.apache.inlong.manager.common.enums.ErrorCodeEnum;
 import org.apache.inlong.manager.common.exceptions.BusinessException;
@@ -34,11 +36,11 @@ import org.apache.inlong.manager.service.resource.queue.pulsar.PulsarUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Pulsar data node operator
@@ -50,6 +52,9 @@ public class PulsarDataNodeOperator extends AbstractDataNodeOperator {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Override
     public Boolean accept(String dataNodeType) {
@@ -106,15 +111,25 @@ public class PulsarDataNodeOperator extends AbstractDataNodeOperator {
 
         PulsarClusterInfo pulsarClusterInfo = PulsarClusterInfo.builder().adminUrl(adminUrl)
                 .token(token).build();
-        try (PulsarAdmin pulsarAdmin = PulsarUtils.getPulsarAdmin(pulsarClusterInfo)) {
+        try {
             // test connect for pulsar adminUrl
-            pulsarAdmin.tenants().getTenants();
+            PulsarUtils.getTenants(restTemplate, pulsarClusterInfo);
             return true;
         } catch (Exception e) {
             String errMsg = String.format("Pulsar connection failed for AdminUrl=%s", pulsarClusterInfo.getAdminUrl());
             LOGGER.error(errMsg, e);
             throw new BusinessException(errMsg);
         }
-
     }
+
+    @Override
+    public NodeConfig getNodeConfig(DataNodeEntity dataNodeEntity) {
+        DataNodeInfo dataNodeInfo = this.getFromEntity(dataNodeEntity);
+        PulsarNodeConfig pulsarNodeConfig = CommonBeanUtils.copyProperties(dataNodeInfo, PulsarNodeConfig::new);
+        PulsarDataNodeDTO dto = PulsarDataNodeDTO.getFromJson(dataNodeEntity.getExtParams());
+        CommonBeanUtils.copyProperties(dto, pulsarNodeConfig);
+        pulsarNodeConfig.setNodeName(dataNodeInfo.getName());
+        return pulsarNodeConfig;
+    }
+
 }

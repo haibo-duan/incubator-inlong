@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.inlong</groupId>
         <artifactId>inlong</artifactId>
-        <version>1.10.0-SNAPSHOT</version>
+        <version>1.14.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>inlong-agent</artifactId>
@@ -34,6 +34,7 @@
         <module>agent-common</module>
         <module>agent-core</module>
         <module>agent-plugins</module>
+        <module>agent-installer</module>
         <module>agent-release</module>
         <module>agent-docker</module>
     </modules>

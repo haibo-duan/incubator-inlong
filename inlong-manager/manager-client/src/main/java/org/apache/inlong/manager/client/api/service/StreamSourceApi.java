@@ -17,6 +17,7 @@
 
 package org.apache.inlong.manager.client.api.service;
 
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
 import org.apache.inlong.manager.pojo.source.SourcePageRequest;
@@ -31,10 +32,15 @@ import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import java.util.List;
+
 public interface StreamSourceApi {
 
     @POST("source/save")
     Call<Response<Integer>> createSource(@Body SourceRequest request);
+
+    @POST("source/batchSave")
+    Call<Response<List<BatchResult>>> batchCreateSource(@Body List<SourceRequest> requestList);
 
     @POST("source/update")
     Call<Response<Boolean>> updateSource(@Body SourceRequest request);
@@ -44,6 +50,12 @@ public interface StreamSourceApi {
 
     @DELETE("source/delete/{id}")
     Call<Response<Boolean>> deleteSource(@Path("id") Integer sourceId);
+
+    @POST("source/stop/{id}")
+    Call<Response<Boolean>> stopSource(@Path("id") Integer sourceId);
+
+    @POST("source/restart/{id}")
+    Call<Response<Boolean>> restartSource(@Path("id") Integer sourceId);
 
     @DELETE("source/forceDelete")
     Call<Response<Boolean>> forceDelete(@Query("inlongGroupId") String groupId,

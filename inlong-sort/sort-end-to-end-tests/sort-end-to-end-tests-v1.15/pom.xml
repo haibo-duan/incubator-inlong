@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache.inlong</groupId>
         <artifactId>sort-end-to-end-tests</artifactId>
-        <version>1.10.0-SNAPSHOT</version>
+        <version>1.14.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>sort-end-to-end-tests-v1.15</artifactId>
@@ -31,6 +31,7 @@
     <properties>
         <inlong.root.dir>${project.parent.parent.parent.basedir}</inlong.root.dir>
         <flink.version>1.15.4</flink.version>
+        <mongodb-driver-sync.version>4.10.2</mongodb-driver-sync.version>
     </properties>
 
     <dependencies>
@@ -45,11 +46,30 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>${testcontainers.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mongodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>${mongodb-driver-sync.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <version>12.4.1.jre8</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -132,6 +152,11 @@
             <artifactId>clickhouse-jdbc</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -157,11 +182,35 @@
                             <type>jar</type>
                             <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
                         </dependency>
+                        <dependency>
+                            <groupId>com.microsoft.sqlserver</groupId>
+                            <artifactId>mssql-jdbc</artifactId>
+                            <version>${mssql.jdbc.version}</version>
+                            <destFileName>mssql-driver.jar</destFileName>
+                            <type>jar</type>
+                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+                        </dependency>
                         <artifactItem>
                             <groupId>org.apache.inlong</groupId>
                             <artifactId>sort-connector-postgres-cdc-v1.15</artifactId>
                             <version>${project.version}</version>
                             <destFileName>sort-connector-postgres-cdc.jar</destFileName>
+                            <type>jar</type>
+                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>org.apache.inlong</groupId>
+                            <artifactId>sort-connector-mongodb-cdc-v1.15</artifactId>
+                            <version>${project.version}</version>
+                            <destFileName>sort-connector-mongodb-cdc.jar</destFileName>
+                            <type>jar</type>
+                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>org.apache.inlong</groupId>
+                            <artifactId>sort-connector-mysql-cdc-v1.15</artifactId>
+                            <version>${project.version}</version>
+                            <destFileName>sort-connector-mysql-cdc.jar</destFileName>
                             <type>jar</type>
                             <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
                         </artifactItem>
@@ -173,6 +222,30 @@
                             <type>jar</type>
                             <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
                         </artifactItem>
+                        <artifactItem>
+                            <groupId>org.apache.inlong</groupId>
+                            <artifactId>sort-connector-sqlserver-cdc-v1.15</artifactId>
+                            <version>${project.version}</version>
+                            <destFileName>sort-connector-sqlserver-cdc.jar</destFileName>
+                            <type>jar</type>
+                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>org.apache.inlong</groupId>
+                            <artifactId>sort-connector-kafka-v1.15</artifactId>
+                            <version>${project.version}</version>
+                            <destFileName>sort-connector-kafka.jar</destFileName>
+                            <type>jar</type>
+                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+                        </artifactItem>
+                        <artifactItem>
+                            <groupId>org.apache.inlong</groupId>
+                            <artifactId>sort-connector-redis-v1.15</artifactId>
+                            <version>${project.version}</version>
+                            <destFileName>sort-connector-redis.jar</destFileName>
+                            <type>jar</type>
+                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+                        </artifactItem>
                     </artifactItems>
                 </configuration>
                 <executions>
@@ -181,7 +254,7 @@
                         <goals>
                             <goal>copy</goal>
                         </goals>
-                        <phase>pre-integration-test</phase>
+                        <phase>validate</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -212,6 +285,12 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${plugin.surefire.version}</version>
             </plugin>
         </plugins>
     </build>

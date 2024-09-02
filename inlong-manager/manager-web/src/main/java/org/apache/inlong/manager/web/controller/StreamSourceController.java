@@ -17,11 +17,14 @@
 
 package org.apache.inlong.manager.web.controller;
 
+import org.apache.inlong.manager.common.enums.OperationTarget;
 import org.apache.inlong.manager.common.enums.OperationType;
 import org.apache.inlong.manager.common.validation.SaveValidation;
 import org.apache.inlong.manager.common.validation.UpdateValidation;
+import org.apache.inlong.manager.pojo.common.BatchResult;
 import org.apache.inlong.manager.pojo.common.PageResult;
 import org.apache.inlong.manager.pojo.common.Response;
+import org.apache.inlong.manager.pojo.source.DataAddTaskRequest;
 import org.apache.inlong.manager.pojo.source.SourcePageRequest;
 import org.apache.inlong.manager.pojo.source.SourceRequest;
 import org.apache.inlong.manager.pojo.source.StreamSource;
@@ -42,6 +45,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * Stream source control layer
  */
@@ -54,17 +59,25 @@ public class StreamSourceController {
     StreamSourceService sourceService;
 
     @RequestMapping(value = "/source/save", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.CREATE)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.SOURCE)
     @ApiOperation(value = "Save stream source")
     public Response<Integer> save(@Validated(SaveValidation.class) @RequestBody SourceRequest request) {
         return Response.success(sourceService.save(request, LoginUserUtils.getLoginUser().getName()));
+    }
+
+    @RequestMapping(value = "/source/batchSave", method = RequestMethod.POST)
+    @OperationLog(operation = OperationType.CREATE, operationTarget = OperationTarget.SOURCE)
+    @ApiOperation(value = "Batch save stream source")
+    public Response<List<BatchResult>> batchSave(
+            @Validated(SaveValidation.class) @RequestBody List<SourceRequest> requestList) {
+        return Response.success(sourceService.batchSave(requestList, LoginUserUtils.getLoginUser().getName()));
     }
 
     @RequestMapping(value = "/source/get/{id}", method = RequestMethod.GET)
     @ApiOperation(value = "Get stream source")
     @ApiImplicitParam(name = "id", dataTypeClass = Integer.class, required = true)
     public Response<StreamSource> get(@PathVariable Integer id) {
-        return Response.success(sourceService.get(id, LoginUserUtils.getLoginUser()));
+        return Response.success(sourceService.get(id));
     }
 
     @RequestMapping(value = "/source/list", method = RequestMethod.POST)
@@ -74,14 +87,14 @@ public class StreamSourceController {
     }
 
     @RequestMapping(value = "/source/update", method = RequestMethod.POST)
-    @OperationLog(operation = OperationType.UPDATE)
+    @OperationLog(operation = OperationType.UPDATE, operationTarget = OperationTarget.SOURCE)
     @ApiOperation(value = "Update stream source")
     public Response<Boolean> update(@Validated(UpdateValidation.class) @RequestBody SourceRequest request) {
         return Response.success(sourceService.update(request, LoginUserUtils.getLoginUser().getName()));
     }
 
     @RequestMapping(value = "/source/delete/{id}", method = RequestMethod.DELETE)
-    @OperationLog(operation = OperationType.DELETE)
+    @OperationLog(operation = OperationType.DELETE, operationTarget = OperationTarget.SOURCE)
     @ApiOperation(value = "Delete stream source")
     @ApiImplicitParam(name = "id", dataTypeClass = Integer.class, required = true)
     public Response<Boolean> delete(@PathVariable Integer id) {
@@ -106,7 +119,7 @@ public class StreamSourceController {
     }
 
     @RequestMapping(value = "/source/forceDelete", method = RequestMethod.DELETE)
-    @OperationLog(operation = OperationType.DELETE)
+    @OperationLog(operation = OperationType.DELETE, operationTarget = OperationTarget.SOURCE)
     @ApiOperation(value = "Force delete stream source by groupId and streamId")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "inlongGroupId", dataTypeClass = String.class, required = true),
@@ -115,6 +128,18 @@ public class StreamSourceController {
     public Response<Boolean> forceDelete(@RequestParam String inlongGroupId, @RequestParam String inlongStreamId) {
         return Response.success(
                 sourceService.forceDelete(inlongGroupId, inlongStreamId, LoginUserUtils.getLoginUser().getName()));
+    }
+
+    @RequestMapping(value = "/source/addDataAddTask/{groupId}/{streamId}", method = RequestMethod.POST)
+    @ApiOperation(value = "Add supplementary recording task for stream source")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "groupId", dataTypeClass = String.class, required = true),
+            @ApiImplicitParam(name = "streamId", dataTypeClass = String.class, required = true)
+    })
+    public Response<List<Integer>> addSub(@PathVariable String groupId, @PathVariable String streamId,
+            @RequestBody List<DataAddTaskRequest> requestList) {
+        return Response.success(sourceService.batchAddDataAddTask(groupId, streamId, requestList,
+                LoginUserUtils.getLoginUser().getName()));
     }
 
 }
